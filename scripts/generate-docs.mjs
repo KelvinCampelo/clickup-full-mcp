@@ -210,6 +210,8 @@ const index = [
   "",
   `🟢 read-only (GET): ${count((o) => kind(o) === "read-only")} · 🟡 write (POST/PUT/PATCH): ${count((o) => kind(o) === "write")} · 🔴 destructive (DELETE): ${count((o) => kind(o) === "destructive")}`,
   "",
+  'By default (meta mode) the operations below are reached through `clickup_call_operation` with `{ "name": "<tool>", "arguments": { … } }`; with `CLICKUP_TOOL_MODE=full` each one is registered as its own tool.',
+  "",
   "How arguments work: path and query parameters go at the top level, JSON request bodies go in `body`, uploads take `file_path` or `file_base64`. See the [main README](../../README.md#how-tools-map-to-the-api).",
   "",
   "## Always-available tools",

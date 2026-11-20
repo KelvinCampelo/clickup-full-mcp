@@ -47,7 +47,7 @@ function realpathOrResolve(p: string): string {
 }
 
 export function loadConfig(env = process.env): Config {
-  const mode = (env.CLICKUP_TOOL_MODE || "full").toLowerCase();
+  const mode = (env.CLICKUP_TOOL_MODE || "meta").toLowerCase();
   if (mode !== "full" && mode !== "meta") throw new ConfigError(`CLICKUP_TOOL_MODE must be "full" or "meta" (got "${mode}")`);
   const toolsets = list(env.CLICKUP_TOOLSETS).map((s) => s.toLowerCase());
   const roots = list(env.CLICKUP_UPLOAD_ROOTS).map(realpathOrResolve);

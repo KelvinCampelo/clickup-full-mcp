@@ -47,7 +47,8 @@ async function connect(env) {
   const transport = new StdioClientTransport({
     command: process.execPath,
     args: ["dist/index.js"],
-    env: { PATH: process.env.PATH, CLICKUP_BASE_URL: base, CLICKUP_API_TOKEN: "pk_test_123", ...env },
+    // Most suites call typed tools directly, so they run in full mode unless they ask otherwise.
+    env: { PATH: process.env.PATH, CLICKUP_BASE_URL: base, CLICKUP_API_TOKEN: "pk_test_123", CLICKUP_TOOL_MODE: "full", ...env },
     stderr: "pipe",
   });
   const client = new Client({ name: "e2e", version: "1" });
@@ -243,8 +244,8 @@ assert.equal(r.isError, true);
 ok(`toolsets + read-only filter (${names.length} tools), raw writes blocked`);
 await c.close();
 
-// ---------- meta mode ----------
-c = await connect({ CLICKUP_TOOL_MODE: "meta" });
+// ---------- meta mode (the default when CLICKUP_TOOL_MODE is unset) ----------
+c = await connect({ CLICKUP_TOOL_MODE: "" });
 const metaNames = (await c.listTools()).tools.map((t) => t.name);
 assert.deepEqual(metaNames.sort(), [
   "clickup_call_operation",
@@ -269,7 +270,7 @@ r = await c.callTool({
   arguments: { name: "start_time_entry", arguments: { team_Id: "7", body: { tid: "abc" } } },
 });
 assert.equal(new URL(last().url, base).pathname, "/api/v2/team/7/time_entries/start");
-ok("meta mode: search -> describe -> call");
+ok("meta mode is the default: 4 tools, search -> describe -> call");
 await c.close();
 
 // ---------- CLI ----------

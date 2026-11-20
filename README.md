@@ -1,5 +1,6 @@
 # ClickUp MCP Server (clickup-full-mcp)
 
+[![npm](https://img.shields.io/npm/v/clickup-full-mcp.svg)](https://www.npmjs.com/package/clickup-full-mcp)
 [![CI](https://github.com/KelvinCampelo/clickup-full-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/KelvinCampelo/clickup-full-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
@@ -30,7 +31,7 @@ Tasks, subtasks, lists, folders, spaces, comments, checklists, custom fields, ta
 
 Most API-wrapping MCP servers register one tool per endpoint. For ClickUp that means 173 tool schemas loaded into the model's context **on every request**, before you've typed anything. That's slower, costs more, crowds out your actual conversation, and makes it harder for the model to pick the right tool. Some clients also cap how many tools a server may register.
 
-With `CLICKUP_TOOL_MODE=meta`, this server exposes 4 tools that reach the whole API:
+By default this server exposes just 4 tools that reach the whole API:
 
 | Tool                         | What it does                                                                           |
 | ---------------------------- | -------------------------------------------------------------------------------------- |
@@ -43,9 +44,9 @@ Measured `tools/list` size (v1.0.0, tokens ≈ characters ÷ 4):
 
 | Mode                                                     | Tools | Schema size | Context cost             |
 | -------------------------------------------------------- | ----: | ----------: | ------------------------ |
-| `full` (default, one tool per endpoint)                  |   174 |      214 KB | **~55,000 tokens**       |
+| `full` (`CLICKUP_TOOL_MODE=full`)                        |   174 |      214 KB | **~55,000 tokens**       |
 | `full` + `CLICKUP_TOOLSETS=tasks,comments,time_tracking` |    42 |       61 KB | ~15,600 tokens           |
-| **`meta`**                                               | **4** |  **2.6 KB** | **~700 tokens** (−98.8%) |
+| **`meta` (default)**                                     | **4** |  **2.6 KB** | **~700 tokens** (−98.8%) |
 
 A typical meta-mode exchange costs one or two extra small calls, and the model only ever loads the schemas it actually uses:
 
@@ -63,12 +64,12 @@ clickup_call_operation     { "name": "create_task", "arguments": { "list_id": "9
 
 Search understands everyday wording: "log time" finds `create_time_entry`, "find tasks" finds `get_tasks`, "post message" finds `send_chat_message`.
 
-Prefer direct tools? `full` mode registers one tool per endpoint, and `CLICKUP_TOOLSETS` trims it to the areas you use. Both modes respect `CLICKUP_READ_ONLY` and `CLICKUP_DISABLED_TOOLS`.
+Prefer direct tools? Set `CLICKUP_TOOL_MODE=full` to register one tool per endpoint, and use `CLICKUP_TOOLSETS` to trim it to the areas you use. Both modes respect `CLICKUP_TOOLSETS`, `CLICKUP_READ_ONLY` and `CLICKUP_DISABLED_TOOLS`.
 
 ## Features
 
 - **Complete coverage**: 173 operations (138 v2 + 35 v3) with full JSON Schemas for every parameter and request body. See the [tool reference](docs/tools/README.md).
-- **Token-efficient**: 4-tool meta mode (~700 tokens), or full mode with per-toolset filtering.
+- **Token-efficient by default**: 4-tool meta mode (~700 tokens), or full mode with per-toolset filtering.
 - **Scoping**: read-only mode, toolset filters, and a deny-list for individual tools like `delete_space`.
 - **Fixes where the spec is wrong**: array filters are encoded the way the live API expects (`statuses[]=a`, `group_ids=a&group_ids=b`, JSON `custom_fields`), and upload field names match the live API.
 - **Built for real use**: 429 retries that honour `Retry-After` / `X-RateLimit-Reset`, timeouts, response truncation, file uploads, OAuth tokens, and MCP tool annotations (read-only / destructive hints).
@@ -78,16 +79,16 @@ Prefer direct tools? `full` mode registers one tool per endpoint, and `CLICKUP_T
 
 ## Quick start
 
-**Requirements:** Node.js 20+ and git.
+**Requirements:** Node.js 20+.
 
 1. **Get a ClickUp API token**: ClickUp → your avatar → **Settings → Apps → API Token** (starts with `pk_`). OAuth access tokens also work.
 2. **Add the server to your MCP client** (see [Client setup](#client-setup)). The quickest way runs it straight from GitHub:
 
    ```bash
-   npx -y github:KelvinCampelo/clickup-full-mcp
+   npx -y clickup-full-mcp
    ```
 
-   The first run clones and builds the project, so it takes a few extra seconds. Later runs use npm's cache.
+   No install step: `npx` fetches the [npm package](https://www.npmjs.com/package/clickup-full-mcp) on first run. The server is also listed in the [official MCP Registry](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.KelvinCampelo/clickup-full-mcp) as `io.github.KelvinCampelo/clickup-full-mcp`.
 
 3. **Ask your assistant** something like:
    - "List the open tasks assigned to me in the _Sprint 42_ list."
@@ -114,7 +115,7 @@ Then use `"command": "node"` and `"args": ["/ABSOLUTE/PATH/clickup-full-mcp/dist
 
 ## Client setup
 
-All examples use the recommended 4-tool meta mode. Remove `CLICKUP_TOOL_MODE` to get one tool per endpoint instead. `CLICKUP_WORKSPACE_ID` is optional but saves the model a lookup on every call.
+The server starts in 4-tool meta mode. Add `"CLICKUP_TOOL_MODE": "full"` to `env` if you'd rather have one tool per endpoint. `CLICKUP_WORKSPACE_ID` is optional but saves the model a lookup on every call.
 
 <details open>
 <summary><b>Claude Desktop</b></summary>
@@ -126,11 +127,10 @@ Edit `claude_desktop_config.json` (Settings → Developer → Edit Config):
   "mcpServers": {
     "clickup": {
       "command": "npx",
-      "args": ["-y", "github:KelvinCampelo/clickup-full-mcp"],
+      "args": ["-y", "clickup-full-mcp"],
       "env": {
         "CLICKUP_API_TOKEN": "pk_xxx",
-        "CLICKUP_WORKSPACE_ID": "1234567",
-        "CLICKUP_TOOL_MODE": "meta"
+        "CLICKUP_WORKSPACE_ID": "1234567"
       }
     }
   }
@@ -144,8 +144,8 @@ Edit `claude_desktop_config.json` (Settings → Developer → Edit Config):
 
 ```bash
 claude mcp add clickup --scope user \
-  -e CLICKUP_API_TOKEN=pk_xxx -e CLICKUP_WORKSPACE_ID=1234567 -e CLICKUP_TOOL_MODE=meta \
-  -- npx -y github:KelvinCampelo/clickup-full-mcp
+  -e CLICKUP_API_TOKEN=pk_xxx -e CLICKUP_WORKSPACE_ID=1234567 \
+  -- npx -y clickup-full-mcp
 ```
 
 </details>
@@ -160,8 +160,8 @@ claude mcp add clickup --scope user \
   "mcpServers": {
     "clickup": {
       "command": "npx",
-      "args": ["-y", "github:KelvinCampelo/clickup-full-mcp"],
-      "env": { "CLICKUP_API_TOKEN": "pk_xxx", "CLICKUP_WORKSPACE_ID": "1234567", "CLICKUP_TOOL_MODE": "meta" }
+      "args": ["-y", "clickup-full-mcp"],
+      "env": { "CLICKUP_API_TOKEN": "pk_xxx", "CLICKUP_WORKSPACE_ID": "1234567" }
     }
   }
 }
@@ -181,8 +181,8 @@ claude mcp add clickup --scope user \
     "clickup": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "github:KelvinCampelo/clickup-full-mcp"],
-      "env": { "CLICKUP_API_TOKEN": "${input:clickup-token}", "CLICKUP_TOOL_MODE": "meta" }
+      "args": ["-y", "clickup-full-mcp"],
+      "env": { "CLICKUP_API_TOKEN": "${input:clickup-token}" }
     }
   }
 }
@@ -193,13 +193,13 @@ claude mcp add clickup --scope user \
 <details>
 <summary><b>Any other MCP client or agent framework</b></summary>
 
-Run `npx -y github:KelvinCampelo/clickup-full-mcp` (or `node dist/index.js` from a clone) as a **stdio** MCP server with the environment variables below. This works with any client or agent SDK that can launch local stdio servers.
+Run `npx -y clickup-full-mcp` (or `node dist/index.js` from a clone) as a **stdio** MCP server with the environment variables below. This works with any client or agent SDK that can launch local stdio servers.
 
 </details>
 
 ## Common ClickUp operations
 
-Each row is one tool call. In meta mode, pass the same arguments to `clickup_call_operation` as `{ "name": "<tool>", "arguments": { … } }`. The examples assume `CLICKUP_WORKSPACE_ID` is set, so `team_id` / `workspace_id` can be left out. Dates are Unix timestamps in **milliseconds**. Every tool's full argument list is in the [tool reference](docs/tools/README.md).
+Each row is one operation. In meta mode (the default), pass the arguments to `clickup_call_operation` as `{ "name": "<tool>", "arguments": { … } }`; in full mode, call the tool directly. The examples assume `CLICKUP_WORKSPACE_ID` is set, so `team_id` / `workspace_id` can be left out. Dates are Unix timestamps in **milliseconds**. Every tool's full argument list is in the [tool reference](docs/tools/README.md).
 
 ### Tasks
 
@@ -256,7 +256,7 @@ All configuration is through environment variables. See [`.env.example`](.env.ex
 | -------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ |
 | `CLICKUP_API_TOKEN`                          | (none)                    | Personal token (`pk_…`) or OAuth access token. Required for everything except `get_access_token`.      |
 | `CLICKUP_WORKSPACE_ID`                       | (none)                    | Default Workspace (team) ID. Auto-fills `team_id` / `workspace_id` and makes them optional in schemas. |
-| `CLICKUP_TOOL_MODE`                          | `full`                    | `meta` = [4 tools for the whole API](#why-4-tools) (recommended). `full` = one tool per endpoint.      |
+| `CLICKUP_TOOL_MODE`                          | `meta`                    | `meta` = [4 tools for the whole API](#why-4-tools). `full` = one tool per endpoint.                    |
 | `CLICKUP_TOOLSETS`                           | all                       | Comma list of [toolsets](#toolsets) to expose (works in both modes).                                   |
 | `CLICKUP_READ_ONLY`                          | `false`                   | Only expose GET operations; `clickup_request` is limited to GET.                                       |
 | `CLICKUP_DISABLED_TOOLS`                     | (none)                    | Comma list of operation names to hide, e.g. `delete_space,delete_folder`.                              |
@@ -311,9 +311,9 @@ Found a vulnerability? Please report it privately, see [SECURITY.md](SECURITY.md
 | `CLICKUP_API_TOKEN is not set`               | Add the token to the `env` block of your client config, then restart the client.                                                               |
 | `HTTP 401`                                   | The token is wrong or was regenerated. Copy a fresh one from Settings → Apps.                                                                  |
 | `HTTP 404`                                   | The ID doesn't exist or your token can't see it. Task IDs are the short alphanumeric ones; custom IDs need `custom_task_ids=true` + `team_id`. |
-| Client is slow or warns about too many tools | Use `CLICKUP_TOOL_MODE=meta` (4 tools) or a smaller `CLICKUP_TOOLSETS`.                                                                        |
-| `npx` not found (Windows, Claude Desktop)    | Use `"command": "cmd"` and `"args": ["/c", "npx", "-y", "github:KelvinCampelo/clickup-full-mcp"]`, or run from a local clone with `node`.      |
-| Server doesn't start                         | Run it in a terminal to see the error: `CLICKUP_API_TOKEN=pk_xxx npx -y github:KelvinCampelo/clickup-full-mcp`. It logs to stderr.             |
+| Client is slow or warns about too many tools | Keep the default meta mode (4 tools), or use a smaller `CLICKUP_TOOLSETS` in full mode.                                                        |
+| `npx` not found (Windows, Claude Desktop)    | Use `"command": "cmd"` and `"args": ["/c", "npx", "-y", "clickup-full-mcp"]`, or run from a local clone with `node`.                           |
+| Server doesn't start                         | Run it in a terminal to see the error: `CLICKUP_API_TOKEN=pk_xxx npx -y clickup-full-mcp`. It logs to stderr.                                  |
 | Response cut off with `[truncated: …]`       | Use paging/filters, or raise `CLICKUP_MAX_RESPONSE_CHARS`.                                                                                     |
 
 Server logs (one `[clickup-mcp] … ready` line on start, plus warnings) go to stderr, which most clients show in their MCP log view.
@@ -324,10 +324,10 @@ Server logs (one `[clickup-mcp] … ready` line on start, plus warnings) go to s
 Yes, that's this project. It exposes all 173 operations of ClickUp's public API v2 and v3, generated from the official OpenAPI specs, including Chat, Docs, Attachments, ACLs and Audit Logs.
 
 **How do I connect ClickUp to Claude, Cursor or VS Code?**
-Add the server to your client's MCP config with your ClickUp API token (see [Client setup](#client-setup)). It runs locally over stdio via `npx`; no hosting needed.
+Add the server to your client's MCP config with your ClickUp API token (see [Client setup](#client-setup)). It runs locally over stdio via `npx -y clickup-full-mcp`; no hosting needed.
 
 **How many tokens does it use?**
-About 700 tokens in meta mode (4 tools) versus ~55,000 when all 173 endpoints are registered as separate tools. See [Why 4 tools?](#why-4-tools).
+About 700 tokens by default (meta mode, 4 tools) versus ~55,000 when all 173 endpoints are registered as separate tools. See [Why 4 tools?](#why-4-tools).
 
 **Can it create tasks, track time, comment, and post in ClickUp Chat?**
 Yes. Anything the ClickUp API can do, including tasks, subtasks, comments, checklists, custom fields, time entries, Docs pages and Chat messages. See [Common ClickUp operations](#common-clickup-operations).

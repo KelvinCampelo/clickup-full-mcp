@@ -1,7 +1,8 @@
 {
   "name": "clickup-full-mcp",
-  "version": "1.0.0",
-  "description": "MCP server that exposes the complete ClickUp API (all 173 v2 + v3 operations) as tools, generated from ClickUp's official OpenAPI specs.",
+  "version": "1.1.0",
+  "mcpName": "io.github.KelvinCampelo/clickup-full-mcp",
+  "description": "MCP server for the complete ClickUp API: all 173 v2 + v3 operations through 4 tools (~700 tokens of context). Generated from ClickUp's official OpenAPI specs.",
   "keywords": [
     "mcp",
     "mcp-server",
@@ -34,7 +35,8 @@
     "README.md",
     "LICENSE",
     "NOTICE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "server.json"
   ],
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
@@ -48,7 +50,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "npm run typecheck && npm run format:check && npm test",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run check"
   },
   "engines": {
     "node": ">=20"
@@ -62,5 +65,8 @@
     "prettier": "^3.10.1",
     "typescript": "^7.0.2",
     "yaml": "^2.9.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-20
+
+### Changed
+
+- **Meta mode is now the default.** With no `CLICKUP_TOOL_MODE` set, the server exposes 4 tools that reach all 173 operations (~700 tokens of context). Set `CLICKUP_TOOL_MODE=full` for the previous behaviour of one tool per endpoint.
+
+### Added
+
+- Published to npm: run with `npx -y clickup-full-mcp`.
+- Listed in the official MCP Registry as `io.github.KelvinCampelo/clickup-full-mcp` (`server.json`).
+- Release workflow publishes to npm with provenance (trusted publishing) and to the MCP Registry on every version tag.
+
 ## [1.0.0] - 2026-11-20
 
 First public release.
@@ -29,5 +41,6 @@ First public release.
 - `CLICKUP_UPLOAD_ROOTS` checks resolve symlinks, so a link inside an allowed folder can't expose files outside it.
 - Invalid numeric or URL settings now fail at startup with a clear message instead of misbehaving at runtime.
 
-[Unreleased]: https://github.com/KelvinCampelo/clickup-full-mcp/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/KelvinCampelo/clickup-full-mcp/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/KelvinCampelo/clickup-full-mcp/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/KelvinCampelo/clickup-full-mcp/releases/tag/v1.0.0

@@ -62,8 +62,9 @@ test/e2e.mjs               MCP client ↔ server ↔ mock ClickUp tests
 ## Releasing (maintainers)
 
 1. Move the `Unreleased` entries in `CHANGELOG.md` under a new version heading and update the compare links.
-2. `npm version <patch|minor|major>`, which bumps `package.json`, commits and tags `vX.Y.Z`.
-3. `git push --follow-tags`. The Release workflow runs the tests, checks that the tag matches `package.json`, and publishes a GitHub release with the changelog section as notes.
+2. Update `version` in `server.json` (top level and `packages[0]`) to the new version.
+3. `npm version <patch|minor|major>`, which bumps `package.json`, commits and tags `vX.Y.Z`.
+4. `git push --follow-tags`. The Release workflow runs the tests, checks that the tag, `package.json` and `server.json` agree, publishes to npm (trusted publishing, with provenance), creates the GitHub release from the changelog section, and publishes `server.json` to the MCP Registry.
 
 ## Reporting bugs and security issues
 

@@ -6,6 +6,8 @@ All **173 tools** exposed by clickup-full-mcp (138 from API v2, 35 from API v3),
 
 🟢 read-only (GET): 66 · 🟡 write (POST/PUT/PATCH): 78 · 🔴 destructive (DELETE): 29
 
+By default (meta mode) the operations below are reached through `clickup_call_operation` with `{ "name": "<tool>", "arguments": { … } }`; with `CLICKUP_TOOL_MODE=full` each one is registered as its own tool.
+
 How arguments work: path and query parameters go at the top level, JSON request bodies go in `body`, uploads take `file_path` or `file_base64`. See the [main README](../../README.md#how-tools-map-to-the-api).
 
 ## Always-available tools

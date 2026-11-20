@@ -1,5 +1,7 @@
 name: Release
 
+# Push a vX.Y.Z tag (see CONTRIBUTING.md) to: test, publish to npm with provenance,
+# create the GitHub release from CHANGELOG.md, and publish server.json to the MCP Registry.
 on:
   push:
     tags: ["v*.*.*"]
@@ -11,19 +13,29 @@ jobs:
   release:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # GitHub release
+      id-token: write # npm trusted publishing + MCP Registry OIDC login
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
           cache: npm
       - run: npm ci
       - run: npm test
-      - name: Tag matches package.json version
+
+      - name: Tag, package.json and server.json versions match
         run: |
           v="$(node -p "require('./package.json').version")"
           [ "v$v" = "$GITHUB_REF_NAME" ] || { echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $v"; exit 1; }
+          node -e '
+            const s = require("./server.json"), p = require("./package.json");
+            const bad = [s.version, ...s.packages.map((x) => x.version)].filter((x) => x !== p.version);
+            if (s.name !== p.mcpName || bad.length) { console.error("::error::server.json name/version out of sync with package.json"); process.exit(1); }'
+
       - name: Extract release notes from CHANGELOG.md
         run: |
           awk -v ver="${GITHUB_REF_NAME#v}" '
@@ -34,7 +46,45 @@ jobs:
           ' CHANGELOG.md > notes.md
           [ -s notes.md ] || { echo "::error::No CHANGELOG.md section for ${GITHUB_REF_NAME#v}"; exit 1; }
           cat notes.md
+
+      - name: Publish to npm (trusted publishing, with provenance)
+        run: |
+          v="$(node -p "require('./package.json').version")"
+          if [ -n "$(npm view "clickup-full-mcp@$v" version 2>/dev/null)" ]; then
+            echo "clickup-full-mcp@$v is already on npm, skipping."
+          else
+            npm publish --provenance --access public
+          fi
+
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --notes-file notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+          fi
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+
+      - name: Download and verify mcp-publisher
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          base_url="https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}"
+          curl --fail --location --silent --show-error --output "$archive" "$base_url/$archive"
+          curl --fail --location --silent --show-error --output "$archive.sigstore.json" "$base_url/$archive.sigstore.json"
+          cosign verify-blob \
+            --bundle "$archive.sigstore.json" \
+            --certificate-identity "https://github.com/modelcontextprotocol/registry/.github/workflows/release.yml@refs/tags/${MCP_PUBLISHER_VERSION}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            "$archive"
+          tar xzf "$archive" mcp-publisher
+          rm -f "$archive" "$archive.sigstore.json"
+
+      - name: Publish to the MCP Registry
+        run: |
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish
