@@ -63,7 +63,7 @@ test/e2e.mjs               MCP client ↔ server ↔ mock ClickUp tests
 
 Releases are fully automated; nobody edits versions or the changelog by hand.
 
-- **Commit messages / PR titles** follow [Conventional Commits](https://www.conventionalcommits.org/). PRs are squash-merged, so the PR title is the commit. `fix:` → patch, `feat:` → minor, `feat!:` or a `BREAKING CHANGE:` footer → major. `docs:`, `chore:`, `ci:`, `test:`, `refactor:` don't release.
+- **Commit messages / PR titles** follow [Conventional Commits](https://www.conventionalcommits.org/). PRs are squash-merged, so the PR title is the commit. `fix:` → patch, `feat:` → minor, a `!` before the colon (`feat!:`, `fix(api)!:`) → major. Squash commits use only the PR title, so the `!` is the way to flag a breaking change. `docs:`, `chore:`, `ci:`, `test:`, `refactor:` don't release.
 - **release-please** keeps a `chore(main): release X.Y.Z` PR open with the next version and changelog (`CHANGELOG.md`, `package.json`, `server.json`). Merging it tags the release, creates the GitHub release and publishes to **npm** (trusted publishing, with provenance), **GHCR** (multi-arch image) and the **MCP Registry**.
 - **ClickUp spec updates**: every Monday, `spec-drift` opens a PR with the regenerated tools, docs and counts, listing added/removed/renamed operations. Additive updates that pass the tests merge themselves, and so does the resulting release PR. Breaking ones are labelled `needs-review`.
 - **Dependabot**: patch and minor updates merge themselves once CI passes; majors wait for review. Runtime dependency bumps (`fix(deps)`) ship as patch releases.
