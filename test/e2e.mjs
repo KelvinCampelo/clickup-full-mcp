@@ -11,6 +11,19 @@ import { spawnSync } from "node:child_process";
 const pkg = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 const seen = [];
+// A ClickUp-like payload full of empty values, to check response formatting.
+const SPARSE = {
+  id: "abc",
+  name: "Ship",
+  due_date: null,
+  tags: [],
+  description: "",
+  archived: false,
+  points: 0,
+  list: { id: "1", folder: {} },
+  custom_fields: [{ id: "f1", value: null }],
+  order: [null, 1],
+};
 let rateLimitOnce = true;
 const mock = http.createServer((req, res) => {
   const chunks = [];
@@ -31,6 +44,10 @@ const mock = http.createServer((req, res) => {
         res.writeHead(429, { "retry-after": "1" });
         return res.end('{"err":"Rate limit"}');
       }
+    }
+    if (req.url.startsWith("/api/v2/task/sparse")) {
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify(SPARSE));
     }
     if (req.url.startsWith("/api/v2/task/missing")) {
       res.writeHead(404, { "content-type": "application/json" });
@@ -223,6 +240,33 @@ if (symlinkMade) {
 ok(`CLICKUP_UPLOAD_ROOTS: allows inside, blocks outside / ..${symlinkMade ? " / symlink escape" : " (symlink check skipped)"}`);
 await c.close();
 fs.rmSync(sandbox, { recursive: true, force: true });
+
+// ---------- response formats ----------
+c = await connect({});
+r = await c.callTool({ name: "get_task", arguments: { task_id: "sparse" } });
+assert.equal(
+  r.content[0].text,
+  JSON.stringify({
+    id: "abc",
+    name: "Ship",
+    archived: false,
+    points: 0,
+    list: { id: "1" },
+    custom_fields: [{ id: "f1" }],
+    order: [null, 1],
+  }),
+);
+ok("compact responses (default): minified, null/empty fields dropped, false/0 and array positions kept");
+await c.close();
+c = await connect({ CLICKUP_RESPONSE_FORMAT: "json" });
+r = await c.callTool({ name: "get_task", arguments: { task_id: "sparse" } });
+assert.equal(r.content[0].text, JSON.stringify(SPARSE));
+await c.close();
+c = await connect({ CLICKUP_RESPONSE_FORMAT: "pretty" });
+r = await c.callTool({ name: "get_task", arguments: { task_id: "sparse" } });
+assert.equal(r.content[0].text, JSON.stringify(SPARSE, null, 2));
+ok("CLICKUP_RESPONSE_FORMAT=json keeps every field; =pretty indents");
+await c.close();
 
 // ---------- OAuth bearer + default workspace ----------
 c = await connect({ CLICKUP_API_TOKEN: "oauth_abc", CLICKUP_WORKSPACE_ID: "999" });

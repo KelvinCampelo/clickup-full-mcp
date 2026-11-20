@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import type { ResponseFormat } from "./format.js";
 
 export interface Config {
   token: string | undefined;
@@ -10,6 +11,7 @@ export interface Config {
   disabledTools: Set<string>;
   defaultWorkspaceId: string | undefined;
   maxResponseChars: number;
+  responseFormat: ResponseFormat;
   timeoutMs: number;
   maxRetries: number;
   uploadRoots: string[] | null;
@@ -51,6 +53,10 @@ export function loadConfig(env = process.env): Config {
   if (mode !== "full" && mode !== "meta") throw new ConfigError(`CLICKUP_TOOL_MODE must be "full" or "meta" (got "${mode}")`);
   const toolsets = list(env.CLICKUP_TOOLSETS).map((s) => s.toLowerCase());
   const roots = list(env.CLICKUP_UPLOAD_ROOTS).map(realpathOrResolve);
+  const responseFormat = (env.CLICKUP_RESPONSE_FORMAT || "compact").toLowerCase();
+  if (responseFormat !== "compact" && responseFormat !== "json" && responseFormat !== "pretty") {
+    throw new ConfigError(`CLICKUP_RESPONSE_FORMAT must be "compact", "json" or "pretty" (got "${responseFormat}")`);
+  }
   const baseUrl = (env.CLICKUP_BASE_URL || "https://api.clickup.com").replace(/\/+$/, "");
   if (!/^https?:\/\/[^/]+/i.test(baseUrl)) throw new ConfigError(`CLICKUP_BASE_URL must be an http(s) URL (got "${baseUrl}")`);
   return {
@@ -61,6 +67,7 @@ export function loadConfig(env = process.env): Config {
     readOnly: bool(env.CLICKUP_READ_ONLY, false),
     disabledTools: new Set(list(env.CLICKUP_DISABLED_TOOLS)),
     defaultWorkspaceId: env.CLICKUP_WORKSPACE_ID || env.CLICKUP_TEAM_ID || undefined,
+    responseFormat,
     maxResponseChars: num("CLICKUP_MAX_RESPONSE_CHARS", env.CLICKUP_MAX_RESPONSE_CHARS, 100_000, 1),
     timeoutMs: num("CLICKUP_TIMEOUT_MS", env.CLICKUP_TIMEOUT_MS, 60_000, 1),
     maxRetries: num("CLICKUP_MAX_RETRIES", env.CLICKUP_MAX_RETRIES, 3, 0),

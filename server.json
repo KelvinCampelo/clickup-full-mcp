@@ -14,7 +14,9 @@
       "registryType": "npm",
       "identifier": "clickup-full-mcp",
       "version": "2.0.0",
-      "transport": { "type": "stdio" },
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
         {
           "name": "CLICKUP_API_TOKEN",
@@ -48,6 +50,13 @@
           "isRequired": false,
           "format": "boolean",
           "default": "false"
+        },
+        {
+          "name": "CLICKUP_RESPONSE_FORMAT",
+          "description": "compact (default: minified, null/empty fields removed), json (every field) or pretty (indented)",
+          "isRequired": false,
+          "format": "string",
+          "default": "compact"
         }
       ]
     }

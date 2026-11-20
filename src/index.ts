@@ -6,6 +6,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema, type Tool } from "@model
 import { ConfigError, loadConfig, type Config } from "./config.js";
 import { ClickUpClient, UserError, isWorkspaceKey, type ApiResult, type Operation } from "./client.js";
 import { PACKAGE_NAME, VERSION } from "./version.js";
+import { renderJson, renderMeta } from "./format.js";
 
 if (process.argv.includes("--version") || process.argv.includes("-v")) {
   console.log(VERSION);
@@ -144,8 +145,8 @@ function formatResult(r: ApiResult, label: string) {
   let out = r.text;
   try {
     const parsed = JSON.parse(r.text);
-    out = JSON.stringify(parsed, null, 2);
-    if (out.length > cfg.maxResponseChars) out = JSON.stringify(parsed);
+    out = renderJson(parsed, cfg.responseFormat);
+    if (out.length > cfg.maxResponseChars && cfg.responseFormat === "pretty") out = renderJson(parsed, "json");
   } catch {
     /* not JSON */
   }
@@ -258,7 +259,7 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
   if (cfg.mode === "meta") {
     if (name === "clickup_search_operations") {
       const res = searchOps(args.query, args.toolset, args.limit ?? 25);
-      return { content: [{ type: "text", text: res.length ? JSON.stringify(res, null, 2) : "No matching operations." }] };
+      return { content: [{ type: "text", text: res.length ? renderMeta(res, cfg.responseFormat) : "No matching operations." }] };
     }
     if (name === "clickup_describe_operation") {
       const op = OPS_BY_NAME.get(args.name);
@@ -268,10 +269,9 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
         content: [
           {
             type: "text",
-            text: JSON.stringify(
+            text: renderMeta(
               { name: t.name, description: t.description, http: `${op.method} ${op.path}`, inputSchema: t.inputSchema },
-              null,
-              2,
+              cfg.responseFormat,
             ),
           },
         ],

@@ -66,10 +66,22 @@ Search understands everyday wording: "log time" finds `create_time_entry`, "find
 
 Prefer direct tools? Set `CLICKUP_TOOL_MODE=full` to register one tool per endpoint, and use `CLICKUP_TOOLSETS` to trim it to the areas you use. Both modes respect `CLICKUP_TOOLSETS`, `CLICKUP_READ_ONLY` and `CLICKUP_DISABLED_TOOLS`.
 
+### Smaller responses, too
+
+The tool list is only half of the cost: every ClickUp response also lands in the context, and ClickUp responses are full of `null`s and empty arrays. By default the server returns **minified JSON with null and empty fields removed** (`false`, `0` and array positions are kept). Measured on the example responses in ClickUp's own spec, compared with indented JSON:
+
+| Response                             | Indented JSON | Compact (default) |   Saved |
+| ------------------------------------ | ------------: | ----------------: | ------: |
+| `get_tasks` (list of tasks)          |  10,697 chars |       5,609 chars | **48%** |
+| `get_task`                           |   6,675 chars |       4,192 chars | **37%** |
+| `get_time_entries_within_date_range` |   1,441 chars |         870 chars | **40%** |
+
+Need every field exactly as ClickUp sent it? Set `CLICKUP_RESPONSE_FORMAT=json` (minified, nothing removed) or `pretty` (indented).
+
 ## Features
 
 - **Complete coverage**: 173 operations (138 v2 + 35 v3) with full JSON Schemas for every parameter and request body. See the [tool reference](docs/tools/README.md).
-- **Token-efficient by default**: 4-tool meta mode (~700 tokens), or full mode with per-toolset filtering.
+- **Token-efficient by default**: 4-tool meta mode (~700 tokens for the whole API) and compact responses (30–48% smaller), or full mode with per-toolset filtering.
 - **Scoping**: read-only mode, toolset filters, and a deny-list for individual tools like `delete_space`.
 - **Fixes where the spec is wrong**: array filters are encoded the way the live API expects (`statuses[]=a`, `group_ids=a&group_ids=b`, JSON `custom_fields`), and upload field names match the live API.
 - **Built for real use**: 429 retries that honour `Retry-After` / `X-RateLimit-Reset`, timeouts, response truncation, file uploads, OAuth tokens, and MCP tool annotations (read-only / destructive hints).
@@ -260,19 +272,20 @@ Each row is one operation. In meta mode (the default), pass the arguments to `cl
 
 All configuration is through environment variables. See [`.env.example`](.env.example).
 
-| Variable                                     | Default                   | Purpose                                                                                                |
-| -------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `CLICKUP_API_TOKEN`                          | (none)                    | Personal token (`pk_…`) or OAuth access token. Required for everything except `get_access_token`.      |
-| `CLICKUP_WORKSPACE_ID`                       | (none)                    | Default Workspace (team) ID. Auto-fills `team_id` / `workspace_id` and makes them optional in schemas. |
-| `CLICKUP_TOOL_MODE`                          | `meta`                    | `meta` = [4 tools for the whole API](#why-4-tools). `full` = one tool per endpoint.                    |
-| `CLICKUP_TOOLSETS`                           | all                       | Comma list of [toolsets](#toolsets) to expose (works in both modes).                                   |
-| `CLICKUP_READ_ONLY`                          | `false`                   | Only expose GET operations; `clickup_request` is limited to GET.                                       |
-| `CLICKUP_DISABLED_TOOLS`                     | (none)                    | Comma list of operation names to hide, e.g. `delete_space,delete_folder`.                              |
-| `CLICKUP_ENABLE_RAW_REQUEST`                 | `true`                    | Expose `clickup_request` (raw call to any `/api/v2` or `/api/v3` path).                                |
-| `CLICKUP_UPLOAD_ROOTS`                       | (none)                    | Comma list of folders that `file_path` uploads may read from. Unset means any file the user can read.  |
-| `CLICKUP_MAX_RESPONSE_CHARS`                 | `100000`                  | Truncate very large responses.                                                                         |
-| `CLICKUP_TIMEOUT_MS` / `CLICKUP_MAX_RETRIES` | `60000` / `3`             | Request timeout and 429 retries.                                                                       |
-| `CLICKUP_BASE_URL`                           | `https://api.clickup.com` | Override for testing or proxies. The token is sent to this host.                                       |
+| Variable                                     | Default                   | Purpose                                                                                                                               |
+| -------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLICKUP_API_TOKEN`                          | (none)                    | Personal token (`pk_…`) or OAuth access token. Required for everything except `get_access_token`.                                     |
+| `CLICKUP_WORKSPACE_ID`                       | (none)                    | Default Workspace (team) ID. Auto-fills `team_id` / `workspace_id` and makes them optional in schemas.                                |
+| `CLICKUP_TOOL_MODE`                          | `meta`                    | `meta` = [4 tools for the whole API](#why-4-tools). `full` = one tool per endpoint.                                                   |
+| `CLICKUP_TOOLSETS`                           | all                       | Comma list of [toolsets](#toolsets) to expose (works in both modes).                                                                  |
+| `CLICKUP_READ_ONLY`                          | `false`                   | Only expose GET operations; `clickup_request` is limited to GET.                                                                      |
+| `CLICKUP_DISABLED_TOOLS`                     | (none)                    | Comma list of operation names to hide, e.g. `delete_space,delete_folder`.                                                             |
+| `CLICKUP_ENABLE_RAW_REQUEST`                 | `true`                    | Expose `clickup_request` (raw call to any `/api/v2` or `/api/v3` path).                                                               |
+| `CLICKUP_UPLOAD_ROOTS`                       | (none)                    | Comma list of folders that `file_path` uploads may read from. Unset means any file the user can read.                                 |
+| `CLICKUP_RESPONSE_FORMAT`                    | `compact`                 | `compact` = minified, null/empty fields removed ([why](#smaller-responses-too)). `json` = minified, every field. `pretty` = indented. |
+| `CLICKUP_MAX_RESPONSE_CHARS`                 | `100000`                  | Truncate very large responses.                                                                                                        |
+| `CLICKUP_TIMEOUT_MS` / `CLICKUP_MAX_RETRIES` | `60000` / `3`             | Request timeout and 429 retries.                                                                                                      |
+| `CLICKUP_BASE_URL`                           | `https://api.clickup.com` | Override for testing or proxies. The token is sent to this host.                                                                      |
 
 ### Finding your Workspace ID
 
