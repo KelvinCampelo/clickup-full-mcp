@@ -30,3 +30,12 @@ updates:
     commit-message:
       prefix: ci
       include: scope
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies]
+    commit-message:
+      prefix: fix # a patched base image ships as a patch release (new GHCR image)
+      include: scope
