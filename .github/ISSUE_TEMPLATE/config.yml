@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/KelvinCampelo/clickup-full-mcp/security/advisories/new
+    about: Report security issues privately, please don't open a public issue.
+  - name: ClickUp API behaviour
+    url: https://developer.clickup.com/docs
+    about: Questions about the ClickUp API itself (not this server) are best answered by ClickUp's docs and support.
+  - name: Questions & ideas
+    url: https://github.com/KelvinCampelo/clickup-full-mcp/discussions
+    about: Ask usage questions or share how you use the server.

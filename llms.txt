@@ -1,0 +1,22 @@
+# clickup-full-mcp
+
+> Local MCP (Model Context Protocol) server for the complete ClickUp API: all 173 operations of ClickUp API v2 + v3 (tasks, lists, folders, spaces, comments, checklists, custom fields, tags, time tracking, goals, guests, users, views, webhooks, Chat, Docs, Attachments, ACLs, Audit Logs), generated from ClickUp's official OpenAPI specs. In meta mode (CLICKUP_TOOL_MODE=meta) it exposes only 4 tools (clickup_search_operations, clickup_describe_operation, clickup_call_operation, clickup_request) that reach every operation for ~700 tokens of context instead of ~55,000.
+
+Run: `npx -y github:KelvinCampelo/clickup-full-mcp` as a stdio MCP server with env CLICKUP_API_TOKEN (personal `pk_` token or OAuth token). Optional: CLICKUP_WORKSPACE_ID, CLICKUP_TOOL_MODE=meta|full, CLICKUP_TOOLSETS, CLICKUP_READ_ONLY=true, CLICKUP_DISABLED_TOOLS, CLICKUP_UPLOAD_ROOTS.
+
+Argument convention for every tool: path and query parameters at the top level, JSON request body in `body`, uploads via `file_path` or `file_base64` + `file_name`. Dates are Unix timestamps in milliseconds. In meta mode, call `clickup_call_operation` with `{ "name": "<operation>", "arguments": { ... } }`.
+
+## Docs
+
+- [README](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/README.md): setup for Claude Desktop, Claude Code, Cursor, VS Code; configuration; common operation examples
+- [Tool reference](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/docs/tools/README.md): every operation with HTTP endpoint, arguments and body fields
+- [Tasks tools](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/docs/tools/tasks.md): get_tasks, get_task, create_task, update_task, move_task, delete_task, get_filtered_team_tasks
+- [Time tracking tools](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/docs/tools/time_tracking.md): start_time_entry, stop_time_entry, create_time_entry, get_time_entries_within_date_range
+- [Chat tools](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/docs/tools/chat.md): get_chat_channels, send_chat_message, get_chat_messages
+- [Docs tools](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/docs/tools/docs.md): search_docs, get_doc_pages, create_doc_page, edit_doc_page
+
+## Optional
+
+- [Security policy](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/SECURITY.md)
+- [Contributing](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/CONTRIBUTING.md)
+- [Changelog](https://github.com/KelvinCampelo/clickup-full-mcp/blob/main/CHANGELOG.md)

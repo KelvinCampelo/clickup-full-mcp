@@ -1,0 +1,55 @@
+name: Bug report
+description: Something doesn't work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Never paste your ClickUp API token** or private workspace data. Redact IDs if needed.
+        Security issues go to [private vulnerability reporting](../../security/advisories/new), not here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Tool call to reproduce
+      description: 'Tool name and arguments (redacted), e.g. `get_tasks` with `{ "list_id": "…", "statuses": ["open"] }`.'
+      render: json
+  - type: textarea
+    id: output
+    attributes:
+      label: Error / server output
+      description: The tool result and any `[clickup-mcp]` lines from the server's stderr.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: clickup-full-mcp version
+      description: Output of `node dist/index.js --version`
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: MCP client
+      placeholder: Claude Desktop 1.x, Claude Code, Cursor, VS Code…
+    validations:
+      required: true
+  - type: input
+    id: node
+    attributes:
+      label: Node.js version and OS
+      placeholder: Node 24.11, macOS 26
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: Non-secret env vars (CLICKUP_TOOL_MODE, CLICKUP_TOOLSETS, CLICKUP_READ_ONLY, …).
+      render: text

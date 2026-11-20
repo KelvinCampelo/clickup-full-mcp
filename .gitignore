@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output (rebuilt by `npm install` via the prepare script)
+dist/
+
+# Secrets / local config
+.env
+.env.*
+!.env.example
+
+# Logs & tooling
+*.log
+npm-debug.log*
+coverage/
+*.tgz
+.eslintcache
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,17 @@
+clickup-full-mcp
+Copyright (c) 2026 Kelvin Campelo. Licensed under the MIT License (see LICENSE).
+
+This is an independent, community project. It is not affiliated with, endorsed
+by, or sponsored by ClickUp. "ClickUp" is a trademark of its owner and is used
+here only to describe the API this software talks to.
+
+Third-party material
+--------------------
+
+spec/clickup-api-v2-reference.json
+spec/ClickUp_PUBLIC_API_V3.yaml
+  ClickUp's public OpenAPI specifications, as published at
+  https://developer.clickup.com/. They are included unmodified so that the
+  generated tool definitions are reproducible, remain the property of ClickUp,
+  and are NOT covered by this project's MIT license. src/generated/operations.json
+  is derived from them by scripts/generate.mjs.

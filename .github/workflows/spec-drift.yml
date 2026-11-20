@@ -1,0 +1,41 @@
+name: ClickUp spec drift
+
+# Weekly: download ClickUp's latest OpenAPI specs, regenerate the tools and open a PR if anything changed.
+on:
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  update-spec:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run update-spec
+      - id: test
+        run: npm test
+        continue-on-error: true
+      - uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
+        with:
+          branch: chore/update-clickup-spec
+          delete-branch: true
+          commit-message: "chore(spec): update ClickUp OpenAPI specs"
+          title: "chore(spec): update ClickUp OpenAPI specs"
+          body: |
+            Automated weekly refresh of `spec/` from developer.clickup.com, with `src/generated/operations.json` and `docs/tools/` regenerated.
+
+            Tests on the regenerated tools: **${{ steps.test.outcome }}**.
+
+            Review the tool list diff (new/removed/renamed operations), update the operation counts in README.md and add a CHANGELOG entry before merging.
+          labels: dependencies, spec

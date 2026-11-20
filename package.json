@@ -1,0 +1,66 @@
+{
+  "name": "clickup-full-mcp",
+  "version": "1.0.0",
+  "description": "MCP server that exposes the complete ClickUp API (all 173 v2 + v3 operations) as tools, generated from ClickUp's official OpenAPI specs.",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "clickup",
+    "clickup-api",
+    "openapi",
+    "ai",
+    "llm",
+    "claude",
+    "agents"
+  ],
+  "homepage": "https://github.com/KelvinCampelo/clickup-full-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/KelvinCampelo/clickup-full-mcp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KelvinCampelo/clickup-full-mcp.git"
+  },
+  "license": "MIT",
+  "author": "Kelvin Campelo (https://github.com/KelvinCampelo)",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "clickup-full-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && tsc && node -e \"require('fs').cpSync('src/generated','dist/generated',{recursive:true})\"",
+    "generate": "node scripts/generate.mjs && node scripts/generate-docs.mjs",
+    "generate:docs": "node scripts/generate-docs.mjs",
+    "update-spec": "node scripts/update-spec.mjs && npm run generate",
+    "start": "node dist/index.js",
+    "test": "npm run build && node test/e2e.mjs",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run typecheck && npm run format:check && npm test",
+    "prepare": "npm run build"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  },
+  "devDependencies": {
+    "@apidevtools/json-schema-ref-parser": "^16.0.8",
+    "@types/node": "^20.19.43",
+    "prettier": "^3.10.1",
+    "typescript": "^7.0.2",
+    "yaml": "^2.9.1"
+  }
+}

@@ -1,0 +1,6 @@
+* text=auto eol=lf
+
+# Vendored upstream specs and generated output: collapse in diffs, exclude from language stats
+spec/** linguist-vendored
+src/generated/** linguist-generated -diff
+docs/tools/** linguist-generated
