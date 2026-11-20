@@ -45,6 +45,10 @@ const mock = http.createServer((req, res) => {
         return res.end('{"err":"Rate limit"}');
       }
     }
+    if (req.url.startsWith("/api/v2/team/7/time_entries")) {
+      res.writeHead(200, { "content-type": "application/json" });
+      return res.end(JSON.stringify({ data: [], meta: { cursor: null }, next_cursor: null }));
+    }
     if (req.url.startsWith("/api/v2/task/sparse")) {
       res.writeHead(200, { "content-type": "application/json" });
       return res.end(JSON.stringify(SPARSE));
@@ -249,6 +253,7 @@ assert.equal(
   JSON.stringify({
     id: "abc",
     name: "Ship",
+    tags: [],
     archived: false,
     points: 0,
     list: { id: "1" },
@@ -257,6 +262,9 @@ assert.equal(
   }),
 );
 ok("compact responses (default): minified, null/empty fields dropped, false/0 and array positions kept");
+r = await c.callTool({ name: "get_time_entries_within_date_range", arguments: { team_Id: "7" } });
+assert.equal(r.content[0].text, JSON.stringify({ data: [] }));
+ok("compact responses keep empty top-level lists ({\"data\":[]}), so 'no results' stays visible");
 await c.close();
 c = await connect({ CLICKUP_RESPONSE_FORMAT: "json" });
 r = await c.callTool({ name: "get_task", arguments: { task_id: "sparse" } });
