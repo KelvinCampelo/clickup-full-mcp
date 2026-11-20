@@ -1,6 +1,8 @@
 name: ClickUp spec drift
 
-# Weekly: download ClickUp's latest OpenAPI specs, regenerate the tools and open a PR if anything changed.
+# Weekly: download ClickUp's latest OpenAPI specs, regenerate tools, docs and counts, and open a PR.
+# Additive changes that pass the tests are auto-merged (and then released by release-please);
+# breaking changes (removed/renamed operations, removed or newly required arguments) wait for review.
 on:
   schedule:
     - cron: "17 6 * * 1"
@@ -9,12 +11,17 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: spec-drift
+  cancel-in-progress: false
+
 jobs:
   update-spec:
     runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
+      actions: write # PRs opened with GITHUB_TOKEN don't trigger CI, so CI is dispatched explicitly
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -22,20 +29,59 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: cp src/generated/operations.json "$RUNNER_TEMP/ops-before.json"
       - run: npm run update-spec
-      - id: test
+
+      - name: Diff the generated tools
+        id: diff
+        run: node scripts/diff-operations.mjs "$RUNNER_TEMP/ops-before.json" src/generated/operations.json --summary "$RUNNER_TEMP/summary.md"
+
+      - name: Test the regenerated tools
+        id: test
         run: npm test
         continue-on-error: true
-      - uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
+
+      - name: PR body
+        env:
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+          BREAKING: ${{ steps.diff.outputs.breaking }}
+        run: |
+          {
+            echo "Automated refresh of \`spec/\` from developer.clickup.com, with tools, docs and counts regenerated."
+            echo
+            cat "$RUNNER_TEMP/summary.md"
+            echo
+            echo "Tests on the regenerated tools: **$TEST_OUTCOME**."
+            echo
+            if [ "$BREAKING" = "false" ] && [ "$TEST_OUTCOME" = "success" ]; then
+              echo "Additive and green, so this PR merges itself once CI passes; release-please then ships it."
+            else
+              echo "⚠️ Needs a human: review the changes above before merging. Breaking changes produce a major release."
+            fi
+          } > "$RUNNER_TEMP/body.md"
+
+      - name: Open or update the PR
+        id: cpr
+        uses: peter-evans/create-pull-request@3ffccacd46053766916f087ce41d627c0b8cf2d1 # v8.1.3
         with:
           branch: chore/update-clickup-spec
           delete-branch: true
-          commit-message: "chore(spec): update ClickUp OpenAPI specs"
-          title: "chore(spec): update ClickUp OpenAPI specs"
-          body: |
-            Automated weekly refresh of `spec/` from developer.clickup.com, with `src/generated/operations.json` and `docs/tools/` regenerated.
-
-            Tests on the regenerated tools: **${{ steps.test.outcome }}**.
-
-            Review the tool list diff (new/removed/renamed operations), update the operation counts in README.md and add a CHANGELOG entry before merging.
+          commit-message: ${{ steps.diff.outputs.title }}
+          title: ${{ steps.diff.outputs.title }}
+          body-path: ${{ runner.temp }}/body.md
           labels: dependencies, spec
+
+      - name: Run CI on the PR and auto-merge additive updates
+        if: steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ steps.cpr.outputs.pull-request-number }}
+          BREAKING: ${{ steps.diff.outputs.breaking }}
+          TEST_OUTCOME: ${{ steps.test.outcome }}
+        run: |
+          gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref chore/update-clickup-spec
+          if [ "$BREAKING" = "false" ] && [ "$TEST_OUTCOME" = "success" ]; then
+            gh pr merge --repo "$GITHUB_REPOSITORY" --auto --squash "$PR"
+          else
+            gh pr edit --repo "$GITHUB_REPOSITORY" "$PR" --add-label needs-review
+          fi

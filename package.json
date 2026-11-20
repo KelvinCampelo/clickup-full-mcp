@@ -41,11 +41,11 @@
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && tsc && node -e \"require('fs').cpSync('src/generated','dist/generated',{recursive:true})\"",
-    "generate": "node scripts/generate.mjs && node scripts/generate-docs.mjs",
+    "generate": "node scripts/generate.mjs && node scripts/generate-docs.mjs && node scripts/sync-counts.mjs",
     "generate:docs": "node scripts/generate-docs.mjs",
     "update-spec": "node scripts/update-spec.mjs && npm run generate",
     "start": "node dist/index.js",
-    "test": "npm run build && node test/e2e.mjs",
+    "test": "npm run build && node test/e2e.mjs && node test/scripts.mjs",
     "typecheck": "tsc --noEmit",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
