@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-stdio-8A2BE2.svg)](https://modelcontextprotocol.io)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/KelvinCampelo/clickup-full-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/KelvinCampelo/clickup-full-mcp)
 
 **The entire ClickUp API in 4 tools.** A local [Model Context Protocol](https://modelcontextprotocol.io) server that lets Claude, Cursor, VS Code Copilot and any other MCP client use **all 173 ClickUp API operations** (v2 + v3) for about **700 tokens of context** instead of ~55,000.
 
@@ -208,12 +209,13 @@ claude mcp add clickup --scope user \
 
 Run `npx -y clickup-full-mcp` (or `node dist/index.js` from a clone) as a **stdio** MCP server with the environment variables below. This works with any client or agent SDK that can launch local stdio servers.
 
-Prefer containers? Build the image from a clone and run it over stdio:
+Prefer containers? A multi-arch image (amd64/arm64) is published to GHCR with every release:
 
 ```bash
-docker build -t clickup-full-mcp .
-docker run -i --rm -e CLICKUP_API_TOKEN=pk_xxx clickup-full-mcp
+docker run -i --rm -e CLICKUP_API_TOKEN=pk_xxx ghcr.io/kelvincampelo/clickup-full-mcp
 ```
+
+In a client config, use `"command": "docker"` and `"args": ["run", "-i", "--rm", "-e", "CLICKUP_API_TOKEN", "ghcr.io/kelvincampelo/clickup-full-mcp"]`, with the token in `env`.
 
 </details>
 
@@ -387,7 +389,7 @@ No. It's an independent open-source project (MIT) and is not affiliated with Cli
 
 ## Keeping up with ClickUp
 
-ClickUp's specs are vendored in `spec/`. A weekly GitHub Action downloads the latest versions, regenerates the tools and the [tool reference](docs/tools/README.md), and opens a PR when anything changed. To refresh manually:
+ClickUp's specs are vendored in `spec/`. A weekly GitHub Action downloads the latest versions, regenerates the tools, the [tool reference](docs/tools/README.md) and the counts in this README, and opens a PR listing every added, removed or renamed operation. Additive updates that pass the tests merge and release themselves; breaking ones wait for review. To refresh manually:
 
 ```bash
 npm run update-spec && npm run build

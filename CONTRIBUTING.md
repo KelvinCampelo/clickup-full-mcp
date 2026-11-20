@@ -57,14 +57,19 @@ test/e2e.mjs               MCP client ↔ server ↔ mock ClickUp tests
 2. Keep PRs focused; one logical change per PR.
 3. Add or update a check in `test/e2e.mjs` for any behaviour change. If you fixed a mismatch between the spec and the live API, describe how you verified the live behaviour.
 4. Update `README.md` for user-facing changes and add a line under `## [Unreleased]` in `CHANGELOG.md`.
-5. Use [Conventional Commits](https://www.conventionalcommits.org/) for commit messages and PR titles (`fix: …`, `feat: …`, `docs: …`, `chore(spec): …`).
+5. Use [Conventional Commits](https://www.conventionalcommits.org/) for the PR title (`fix: …`, `feat: …`, `docs: …`). It becomes the squash commit and decides the next version (see below).
 
-## Releasing (maintainers)
+## Releases and automation
 
-1. Move the `Unreleased` entries in `CHANGELOG.md` under a new version heading and update the compare links.
-2. Update `version` in `server.json` (top level and `packages[0]`) to the new version.
-3. `npm version <patch|minor|major>`, which bumps `package.json`, commits and tags `vX.Y.Z`.
-4. `git push --follow-tags`. The Release workflow runs the tests, checks that the tag, `package.json` and `server.json` agree, publishes to npm (trusted publishing, with provenance), creates the GitHub release from the changelog section, and publishes `server.json` to the MCP Registry.
+Releases are fully automated; nobody edits versions or the changelog by hand.
+
+- **Commit messages / PR titles** follow [Conventional Commits](https://www.conventionalcommits.org/). PRs are squash-merged, so the PR title is the commit. `fix:` → patch, `feat:` → minor, `feat!:` or a `BREAKING CHANGE:` footer → major. `docs:`, `chore:`, `ci:`, `test:`, `refactor:` don't release.
+- **release-please** keeps a `chore(main): release X.Y.Z` PR open with the next version and changelog (`CHANGELOG.md`, `package.json`, `server.json`). Merging it tags the release, creates the GitHub release and publishes to **npm** (trusted publishing, with provenance), **GHCR** (multi-arch image) and the **MCP Registry**.
+- **ClickUp spec updates**: every Monday, `spec-drift` opens a PR with the regenerated tools, docs and counts, listing added/removed/renamed operations. Additive updates that pass the tests merge themselves, and so does the resulting release PR. Breaking ones are labelled `needs-review`.
+- **Dependabot**: patch and minor updates merge themselves once CI passes; majors wait for review. Runtime dependency bumps (`fix(deps)`) ship as patch releases.
+- **`main` is protected**: changes land through PRs with a green `CI OK` check (maintainers can bypass).
+
+If a publish step fails, re-run it for an existing tag from **Actions → Release → Run workflow** with the `tag` input (each step skips what is already published).
 
 ## Reporting bugs and security issues
 
