@@ -22,11 +22,28 @@ export function pruneEmpty(value: unknown): unknown {
   return out;
 }
 
+/**
+ * Compact form of a response: everything is pruned, except that empty lists directly at the top level are kept.
+ * They carry "no results" (`{"data":[]}`, `{"tasks":[]}`); dropping them would leave a confusing `{}`.
+ */
+export function compactResponse(value: unknown): unknown {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return pruneEmpty(value);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (Array.isArray(v)) out[k] = pruneEmpty(v);
+    else {
+      const pruned = v !== null && typeof v === "object" ? pruneEmpty(v) : v;
+      if (!isEmpty(pruned)) out[k] = pruned;
+    }
+  }
+  return out;
+}
+
 /** Serialize an API response body for the model. */
 export function renderJson(value: unknown, format: ResponseFormat): string {
   if (format === "pretty") return JSON.stringify(value, null, 2);
   if (format === "json") return JSON.stringify(value);
-  return JSON.stringify(pruneEmpty(value));
+  return JSON.stringify(compactResponse(value));
 }
 
 /** Serialize server-generated data (search results, schemas): never pruned, indented only in pretty mode. */

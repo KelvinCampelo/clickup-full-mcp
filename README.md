@@ -69,12 +69,12 @@ Prefer direct tools? Set `CLICKUP_TOOL_MODE=full` to register one tool per endpo
 
 ### Smaller responses, too
 
-The tool list is only half of the cost: every ClickUp response also lands in the context, and ClickUp responses are full of `null`s and empty arrays. By default the server returns **minified JSON with null and empty fields removed** (`false`, `0` and array positions are kept). Measured on the example responses in ClickUp's own spec, compared with indented JSON:
+The tool list is only half of the cost: every ClickUp response also lands in the context, and ClickUp responses are full of `null`s and empty arrays. By default the server returns **minified JSON with null and empty fields removed** (`false`, `0`, array positions and empty top-level lists like `{"tasks":[]}` are kept). Measured on the example responses in ClickUp's own spec, compared with indented JSON:
 
 | Response                             | Indented JSON | Compact (default) |   Saved |
 | ------------------------------------ | ------------: | ----------------: | ------: |
 | `get_tasks` (list of tasks)          |  10,697 chars |       5,609 chars | **48%** |
-| `get_task`                           |   6,675 chars |       4,192 chars | **37%** |
+| `get_task`                           |   6,675 chars |       4,262 chars | **36%** |
 | `get_time_entries_within_date_range` |   1,441 chars |         870 chars | **40%** |
 
 Need every field exactly as ClickUp sent it? Set `CLICKUP_RESPONSE_FORMAT=json` (minified, nothing removed) or `pretty` (indented).
@@ -82,7 +82,7 @@ Need every field exactly as ClickUp sent it? Set `CLICKUP_RESPONSE_FORMAT=json` 
 ## Features
 
 - **Complete coverage**: 173 operations (138 v2 + 35 v3) with full JSON Schemas for every parameter and request body. See the [tool reference](docs/tools/README.md).
-- **Token-efficient by default**: 4-tool meta mode (~700 tokens for the whole API) and compact responses (30–48% smaller), or full mode with per-toolset filtering.
+- **Token-efficient by default**: 4-tool meta mode (~700 tokens for the whole API) and compact responses (36–48% smaller), or full mode with per-toolset filtering.
 - **Scoping**: read-only mode, toolset filters, and a deny-list for individual tools like `delete_space`.
 - **Fixes where the spec is wrong**: array filters are encoded the way the live API expects (`statuses[]=a`, `group_ids=a&group_ids=b`, JSON `custom_fields`), and upload field names match the live API.
 - **Built for real use**: 429 retries that honour `Retry-After` / `X-RateLimit-Reset`, timeouts, response truncation, file uploads, OAuth tokens, and MCP tool annotations (read-only / destructive hints).
@@ -352,15 +352,16 @@ Found a vulnerability? Please report it privately, see [SECURITY.md](SECURITY.md
 
 ## Troubleshooting
 
-| Symptom                                      | Fix                                                                                                                                            |
-| -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLICKUP_API_TOKEN is not set`               | Add the token to the `env` block of your client config, then restart the client.                                                               |
-| `HTTP 401`                                   | The token is wrong or was regenerated. Copy a fresh one from Settings → Apps.                                                                  |
-| `HTTP 404`                                   | The ID doesn't exist or your token can't see it. Task IDs are the short alphanumeric ones; custom IDs need `custom_task_ids=true` + `team_id`. |
-| Client is slow or warns about too many tools | Keep the default meta mode (4 tools), or use a smaller `CLICKUP_TOOLSETS` in full mode.                                                        |
-| `npx` not found (Windows, Claude Desktop)    | Use `"command": "cmd"` and `"args": ["/c", "npx", "-y", "clickup-full-mcp"]`, or run from a local clone with `node`.                           |
-| Server doesn't start                         | Run it in a terminal to see the error: `CLICKUP_API_TOKEN=pk_xxx npx -y clickup-full-mcp`. It logs to stderr.                                  |
-| Response cut off with `[truncated: …]`       | Use paging/filters, or raise `CLICKUP_MAX_RESPONSE_CHARS`.                                                                                     |
+| Symptom                                             | Fix                                                                                                                                            |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLICKUP_API_TOKEN is not set`                      | Add the token to the `env` block of your client config, then restart the client.                                                               |
+| `HTTP 401` with `OAUTH_027` ("Team not authorized") | ClickUp also returns this for IDs that don't exist or that your token can't see. Check the ID before suspecting the token.                     |
+| `HTTP 401` (other codes)                            | The token is wrong or was regenerated. Copy a fresh one from Settings → Apps.                                                                  |
+| `HTTP 404`                                          | The ID doesn't exist or your token can't see it. Task IDs are the short alphanumeric ones; custom IDs need `custom_task_ids=true` + `team_id`. |
+| Client is slow or warns about too many tools        | Keep the default meta mode (4 tools), or use a smaller `CLICKUP_TOOLSETS` in full mode.                                                        |
+| `npx` not found (Windows, Claude Desktop)           | Use `"command": "cmd"` and `"args": ["/c", "npx", "-y", "clickup-full-mcp"]`, or run from a local clone with `node`.                           |
+| Server doesn't start                                | Run it in a terminal to see the error: `CLICKUP_API_TOKEN=pk_xxx npx -y clickup-full-mcp`. It logs to stderr.                                  |
+| Response cut off with `[truncated: …]`              | Use paging/filters, or raise `CLICKUP_MAX_RESPONSE_CHARS`.                                                                                     |
 
 Server logs (one `[clickup-mcp] … ready` line on start, plus warnings) go to stderr, which most clients show in their MCP log view.
 
