@@ -33,11 +33,14 @@ function num(name: string, v: string | undefined, dflt: number, min: number): nu
   return n;
 }
 
-/** Resolve symlinks so that containment checks compare real locations. */
+/**
+ * Resolve symlinks so that containment checks compare real locations. Uses the native implementation,
+ * the same one fs.promises.realpath uses for uploaded files (it also expands Windows 8.3 short names).
+ */
 function realpathOrResolve(p: string): string {
   const abs = path.resolve(p);
   try {
-    return fs.realpathSync(abs);
+    return fs.realpathSync.native(abs);
   } catch {
     return abs;
   }
