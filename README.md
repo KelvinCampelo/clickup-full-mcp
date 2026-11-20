@@ -87,7 +87,7 @@ Prefer direct tools? `full` mode registers one tool per endpoint, and `CLICKUP_T
    npx -y github:KelvinCampelo/clickup-full-mcp
    ```
 
-   The first run clones and builds the project, which takes about 30 seconds. Later runs use npm's cache.
+   The first run clones and builds the project, so it takes a few extra seconds. Later runs use npm's cache.
 
 3. **Ask your assistant** something like:
    - "List the open tasks assigned to me in the _Sprint 42_ list."
