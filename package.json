@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "^16.0.8",
-    "@types/node": "^20.19.43",
+    "@types/node": "^26.6.6",
     "prettier": "^3.10.1",
     "typescript": "^7.0.2",
     "yaml": "^2.9.1"
