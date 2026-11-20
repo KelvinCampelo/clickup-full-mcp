@@ -63,7 +63,8 @@ jobs:
           last="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD)"
           echo "Commits since $last:"; git log --format='  %s' "$last..HEAD"
           # Automated = spec updates, dependency bumps and housekeeping. Anything else (or a breaking "!") needs a human.
-          if git log --format=%s "$last..HEAD" | grep -vqE '^((feat|fix|chore)\(spec\)|fix\(deps\)|(chore|ci|build|test|docs)(\([^)]*\))?): '; then
+          human="$(git log --format=%s "$last..HEAD" | grep -cvE '^((feat|fix|chore)\(spec\)|fix\(deps\)|(chore|ci|build|test|docs)(\([^)]*\))?): ' || true)"
+          if [ "$human" -gt 0 ]; then
             echo "Release PR #$number has human-authored changes: leaving it for review."
           else
             echo "Release PR #$number only contains automated changes: enabling auto-merge."
