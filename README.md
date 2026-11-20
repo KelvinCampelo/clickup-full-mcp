@@ -195,6 +195,13 @@ claude mcp add clickup --scope user \
 
 Run `npx -y clickup-full-mcp` (or `node dist/index.js` from a clone) as a **stdio** MCP server with the environment variables below. This works with any client or agent SDK that can launch local stdio servers.
 
+Prefer containers? Build the image from a clone and run it over stdio:
+
+```bash
+docker build -t clickup-full-mcp .
+docker run -i --rm -e CLICKUP_API_TOKEN=pk_xxx clickup-full-mcp
+```
+
 </details>
 
 ## Common ClickUp operations

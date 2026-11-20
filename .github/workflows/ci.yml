@@ -53,3 +53,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: docker build -t clickup-full-mcp .
+      - name: Smoke test (--version and MCP tools/list over stdio)
+        run: |
+          docker run --rm clickup-full-mcp --version
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | timeout 20 docker run -i --rm -e CLICKUP_API_TOKEN=pk_test clickup-full-mcp > out.jsonl || true
+          cat out.jsonl
+          grep -q '"clickup_call_operation"' out.jsonl
