@@ -20,7 +20,7 @@ Tasks, subtasks, lists, folders, spaces, comments, checklists, custom fields, ta
 - [Quick start](#quick-start)
 - [Client setup](#client-setup): Claude Desktop, Claude Code, Cursor, VS Code, others
 - [Common ClickUp operations](#common-clickup-operations): examples you can copy
-- [Configuration](#configuration)
+- [Configuration](#configuration) · [Finding your Workspace ID](#finding-your-workspace-id)
 - [How tools map to the API](#how-tools-map-to-the-api) · **[Full tool reference →](docs/tools/README.md)**
 - [Security](#security)
 - [Troubleshooting](#troubleshooting)
@@ -82,6 +82,7 @@ Prefer direct tools? Set `CLICKUP_TOOL_MODE=full` to register one tool per endpo
 **Requirements:** Node.js 20+.
 
 1. **Get a ClickUp API token**: ClickUp → your avatar → **Settings → Apps → API Token** (starts with `pk_`). OAuth access tokens also work.
+   Optionally note your **Workspace ID** too ([how to find it](#finding-your-workspace-id)), so the model doesn't have to look it up.
 2. **Add the server to your MCP client** (see [Client setup](#client-setup)). The quickest way runs it straight from GitHub:
 
    ```bash
@@ -115,7 +116,7 @@ Then use `"command": "node"` and `"args": ["/ABSOLUTE/PATH/clickup-full-mcp/dist
 
 ## Client setup
 
-The server starts in 4-tool meta mode. Add `"CLICKUP_TOOL_MODE": "full"` to `env` if you'd rather have one tool per endpoint. `CLICKUP_WORKSPACE_ID` is optional but saves the model a lookup on every call.
+The server starts in 4-tool meta mode. Add `"CLICKUP_TOOL_MODE": "full"` to `env` if you'd rather have one tool per endpoint. `CLICKUP_WORKSPACE_ID` is optional but saves the model a lookup on every call ([how to find it](#finding-your-workspace-id)).
 
 <details open>
 <summary><b>Claude Desktop</b></summary>
@@ -273,7 +274,30 @@ All configuration is through environment variables. See [`.env.example`](.env.ex
 | `CLICKUP_TIMEOUT_MS` / `CLICKUP_MAX_RETRIES` | `60000` / `3`             | Request timeout and 429 retries.                                                                       |
 | `CLICKUP_BASE_URL`                           | `https://api.clickup.com` | Override for testing or proxies. The token is sent to this host.                                       |
 
-Find your Workspace ID in any ClickUp URL (`app.clickup.com/<workspace_id>/…`), or ask the assistant to run `get_authorized_workspaces`.
+### Finding your Workspace ID
+
+The Workspace ID is the number that identifies your ClickUp Workspace. ClickUp's API calls Workspaces "teams", so it's the same value as `team_id` (v2) and `workspace_id` (v3). Any of these works:
+
+1. **From the browser address bar.** Open ClickUp in a browser. The first number after `app.clickup.com/` is your Workspace ID:
+
+   ```text
+   https://app.clickup.com/9012345678/v/b/t/9012345678
+                           └────┬───┘
+                          Workspace ID
+   ```
+
+   In the desktop app, use **Copy link** on any Space, List or task and look at the same spot in the copied URL.
+
+2. **Ask your assistant.** With the server connected, ask _"List my ClickUp workspaces"_. It runs `get_authorized_workspaces` and returns each Workspace's `id` and `name`.
+
+3. **Call the API directly** with your token:
+
+   ```bash
+   curl -s -H "Authorization: pk_xxx" https://api.clickup.com/api/v2/team
+   # {"teams":[{"id":"9012345678","name":"Acme", …}]}
+   ```
+
+Put the value in `CLICKUP_WORKSPACE_ID`. If you belong to several Workspaces, pick the one you use most; you can still pass `team_id` / `workspace_id` explicitly for the others.
 
 ### Toolsets
 
