@@ -29,8 +29,8 @@ jobs:
       - name: Generated operations and tool docs are up to date with spec/
         run: |
           npm run generate
-          if [ -n "$(git status --porcelain -- src/generated docs/tools)" ]; then
-            git status --short -- src/generated docs/tools
+          if [ -n "$(git status --porcelain -- src/generated docs/tools README.md package.json server.json llms.txt)" ]; then
+            git status --short -- src/generated docs/tools README.md package.json server.json llms.txt
             echo "::error::Generated files are stale. Run 'npm run generate' and commit the result."
             exit 1
           fi
@@ -70,3 +70,17 @@ jobs:
             | timeout 20 docker run -i --rm -e CLICKUP_API_TOKEN=pk_test clickup-full-mcp > out.jsonl || true
           cat out.jsonl
           grep -q '"clickup_call_operation"' out.jsonl
+
+  # Single required status check for branch protection: green only if every job above succeeded.
+  ci-ok:
+    name: CI OK
+    if: always()
+    needs: [lint, test, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - name: All CI jobs passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for r in $RESULTS; do [ "$r" = "success" ] || exit 1; done

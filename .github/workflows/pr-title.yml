@@ -1,0 +1,23 @@
+name: PR title
+
+# PRs are squash-merged, so the title becomes the commit message that release-please reads.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  conventional-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Title follows Conventional Commits
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if printf '%s' "$TITLE" | grep -qE '^(feat|fix|perf|docs|refactor|test|build|ci|chore|revert|style)(\([a-z0-9._/-]+\))?!?: .+'; then
+            echo "OK: $TITLE"
+          else
+            echo "::error::PR title must follow Conventional Commits, e.g. 'fix: handle empty task lists' or 'feat(docs): ...'. It becomes the squash commit and decides the next version."
+            exit 1
+          fi

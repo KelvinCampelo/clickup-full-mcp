@@ -14,6 +14,10 @@ updates:
         dependency-type: development
         update-types: [minor, patch]
     labels: [dependencies]
+    commit-message:
+      prefix: fix # runtime dependency bumps ship as patch releases
+      prefix-development: chore # dev-only bumps don't trigger a release
+      include: scope
 
   - package-ecosystem: github-actions
     directory: /
@@ -23,3 +27,6 @@ updates:
       actions:
         patterns: ["*"]
     labels: [dependencies, ci]
+    commit-message:
+      prefix: ci
+      include: scope
