@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      # @types/node tracks the oldest supported Node.js (package.json "engines"); bump it with the engines field.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     groups:
       dev-dependencies:
         dependency-type: development
