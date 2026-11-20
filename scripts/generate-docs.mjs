@@ -53,7 +53,7 @@ const cell = (s = "", toolset = "", max = 300) => {
     .replace(/\s+/g, " ")
     .trim();
   if (t.length > max) t = t.slice(0, max - 1).trimEnd() + "…";
-  return linkRefs(t, toolset).replace(/\|/g, "\\|");
+  return linkRefs(t, toolset).replace(/\|/g, "&#124;"); // entity, not "\|": avoids interacting with backslashes in the text
 };
 
 /** Free text for a paragraph: drop the leading summary and trailing "ClickUp API vX: ..." line we render separately. */
