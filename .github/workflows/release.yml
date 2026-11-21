@@ -59,6 +59,7 @@ jobs:
           branch="$(jq -r .headBranchName <<<"$PR_JSON")"
           number="$(jq -r .number <<<"$PR_JSON")"
           gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"
+          gh workflow run pr-title.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"
 
           last="$(git describe --tags --abbrev=0 --match 'v[0-9]*' HEAD)"
           echo "Commits since $last:"; git log --format='  %s' "$last..HEAD"
@@ -101,8 +102,15 @@ jobs:
           [ "v$v" = "$TAG" ] || { echo "::error::Tag $TAG does not match package.json version $v"; exit 1; }
           node -e '
             const s = require("./server.json"), p = require("./package.json");
-            const bad = [s.version, ...s.packages.map((x) => x.version)].filter((x) => x !== p.version);
-            if (s.name !== p.mcpName || bad.length) { console.error("::error::server.json name/version out of sync with package.json"); process.exit(1); }'
+            const bad = s.packages.filter((x) =>
+              x.registryType === "oci"
+                ? "version" in x || !x.identifier.endsWith(":" + p.version)
+                : x.version !== p.version
+            );
+            if (s.name !== p.mcpName || s.version !== p.version || bad.length) {
+              console.error("::error::server.json name/version out of sync with package.json");
+              process.exit(1);
+            }'
           echo "VERSION=$v" >> "$GITHUB_ENV"
 
       - name: Publish to npm (trusted publishing, with provenance)
@@ -143,7 +151,8 @@ jobs:
             org.opencontainers.image.title=clickup-full-mcp
             org.opencontainers.image.description=MCP server for the complete ClickUp API
             io.modelcontextprotocol.server.name=io.github.KelvinCampelo/clickup-full-mcp
-      - name: Build and push multi-arch image to GHCR
+      - id: push
+        name: Build and push multi-arch image to GHCR
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -155,6 +164,11 @@ jobs:
           sbom: true
 
       - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      - name: Sign GHCR image with Cosign (keyless OIDC)
+        env:
+          IMAGE: ${{ env.IMAGE }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+        run: cosign sign --yes "${IMAGE}@${DIGEST}"
       - name: Download and verify mcp-publisher
         run: |
           set -euo pipefail

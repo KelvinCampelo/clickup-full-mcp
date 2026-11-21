@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D20-brightgreen.svg)](https://nodejs.org)
 [![MCP](https://img.shields.io/badge/MCP-stdio-8A2BE2.svg)](https://modelcontextprotocol.io)
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-listed-blue.svg)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.KelvinCampelo/clickup-full-mcp)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/KelvinCampelo/clickup-full-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/KelvinCampelo/clickup-full-mcp)
 
 **The entire ClickUp API in 4 tools.** A local [Model Context Protocol](https://modelcontextprotocol.io) server that lets Claude, Cursor, VS Code Copilot and any other MCP client use **all 173 ClickUp API operations** (v2 + v3) for about **700 tokens of context** instead of ~55,000.
@@ -96,7 +97,7 @@ Need every field exactly as ClickUp sent it? Set `CLICKUP_RESPONSE_FORMAT=json` 
 
 1. **Get a ClickUp API token**: ClickUp → your avatar → **Settings → Apps → API Token** (starts with `pk_`). OAuth access tokens also work.
    Optionally note your **Workspace ID** too ([how to find it](#finding-your-workspace-id)), so the model doesn't have to look it up.
-2. **Add the server to your MCP client** (see [Client setup](#client-setup)). The quickest way runs it straight from GitHub:
+2. **Add the server to your MCP client** (see [Client setup](#client-setup)). The quickest way runs it straight from npm:
 
    ```bash
    npx -y clickup-full-mcp
@@ -130,6 +131,10 @@ Then use `"command": "node"` and `"args": ["/ABSOLUTE/PATH/clickup-full-mcp/dist
 ## Client setup
 
 The server starts in 4-tool meta mode. Add `"CLICKUP_TOOL_MODE": "full"` to `env` if you'd rather have one tool per endpoint. `CLICKUP_WORKSPACE_ID` is optional but saves the model a lookup on every call ([how to find it](#finding-your-workspace-id)).
+
+One-click install: [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_Server-0098FF?logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522clickup%2522%252C%2522type%2522%253A%2522stdio%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522clickup-full-mcp%2522%255D%252C%2522inputs%2522%253A%255B%257B%2522type%2522%253A%2522promptString%2522%252C%2522id%2522%253A%2522clickup-token%2522%252C%2522description%2522%253A%2522ClickUp%2520API%2520token%2520%2528pk_...%2520or%2520OAuth%2529%2522%252C%2522password%2522%253Atrue%257D%255D%252C%2522env%2522%253A%257B%2522CLICKUP_API_TOKEN%2522%253A%2522%2524%257Binput%253Aclickup-token%257D%2522%257D%257D) [![Install in Cursor](https://img.shields.io/badge/Cursor-Install_Server-000000?logo=cursor&logoColor=white)](https://cursor.com/install-mcp?name=clickup&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsImNsaWNrdXAtZnVsbC1tY3AiXSwiZW52Ijp7IkNMSUNLVVBfQVBJX1RPS0VOIjoicGtfeHh4In19)
+
+VS Code prompts for your token. Cursor installs with a placeholder; replace `pk_xxx` afterwards.
 
 <details open>
 <summary><b>Claude Desktop</b></summary>
@@ -201,6 +206,41 @@ claude mcp add clickup --scope user \
   }
 }
 ```
+
+</details>
+
+<details>
+<summary><b>Windsurf</b></summary>
+
+`~/.codeium/windsurf/mcp_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "clickup": {
+      "command": "npx",
+      "args": ["-y", "clickup-full-mcp"],
+      "env": { "CLICKUP_API_TOKEN": "pk_xxx", "CLICKUP_WORKSPACE_ID": "1234567" }
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><b>Codex CLI / Gemini CLI</b></summary>
+
+Codex CLI, `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.clickup]
+command = "npx"
+args = ["-y", "clickup-full-mcp"]
+env = { CLICKUP_API_TOKEN = "pk_xxx", CLICKUP_WORKSPACE_ID = "1234567" }
+```
+
+Gemini CLI, `~/.gemini/settings.json` (same `mcpServers` block as Cursor above).
 
 </details>
 
@@ -362,6 +402,8 @@ Found a vulnerability? Please report it privately, see [SECURITY.md](SECURITY.md
 | `npx` not found (Windows, Claude Desktop)           | Use `"command": "cmd"` and `"args": ["/c", "npx", "-y", "clickup-full-mcp"]`, or run from a local clone with `node`.                           |
 | Server doesn't start                                | Run it in a terminal to see the error: `CLICKUP_API_TOKEN=pk_xxx npx -y clickup-full-mcp`. It logs to stderr.                                  |
 | Response cut off with `[truncated: …]`              | Use paging/filters, or raise `CLICKUP_MAX_RESPONSE_CHARS`.                                                                                     |
+
+Run `npx -y clickup-full-mcp --version` to print the installed version, or `--help` to list all environment variables.
 
 Server logs (one `[clickup-mcp] … ready` line on start, plus warnings) go to stderr, which most clients show in their MCP log view.
 

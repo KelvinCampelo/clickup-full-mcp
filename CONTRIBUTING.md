@@ -5,7 +5,7 @@ By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Development setup
 
-Requirements: Node.js 20 or newer (24 recommended, see `.nvmrc`).
+Requirements: Node.js 20 or newer (26 recommended, see `.nvmrc`).
 
 ```bash
 git clone https://github.com/KelvinCampelo/clickup-full-mcp.git
@@ -23,7 +23,7 @@ To try your build in an MCP client, point the client at `node /path/to/clickup-f
 | Script                | What it does                                                               |
 | --------------------- | -------------------------------------------------------------------------- |
 | `npm run build`       | Compile `src/` to `dist/` and copy the generated operations.               |
-| `npm test`            | Build, then run `test/e2e.mjs`.                                            |
+| `npm test`            | Build, then run `test/e2e.mjs` and `test/scripts.mjs`.                     |
 | `npm run check`       | Everything CI runs: typecheck, format check, tests.                        |
 | `npm run format`      | Apply Prettier.                                                            |
 | `npm run generate`    | Regenerate `src/generated/operations.json` and `docs/tools/` from `spec/`. |
@@ -36,10 +36,15 @@ spec/                      ClickUp's official OpenAPI specs (vendored, v2 JSON +
 scripts/generate.mjs       spec → src/generated/operations.json (one entry per tool)
 scripts/generate-docs.mjs  operations.json → docs/tools/*.md (tool reference)
 scripts/update-spec.mjs    downloads the latest specs
+scripts/diff-operations.mjs  lists added/removed/renamed operations between spec updates
+scripts/sync-counts.mjs    keeps operation/tool counts in the docs in sync
 src/index.ts               MCP server: tool listing, full/meta modes, filters
 src/client.ts              HTTP layer: auth, query encoding, uploads, retries, safety checks
 src/config.ts              environment variable parsing and validation
+src/format.ts              response formatting (compact / json / pretty)
+src/version.ts             server version, read from package.json
 test/e2e.mjs               MCP client ↔ server ↔ mock ClickUp tests
+test/scripts.mjs           tests for the scripts in scripts/
 ```
 
 ### Generated code
@@ -56,7 +61,7 @@ test/e2e.mjs               MCP client ↔ server ↔ mock ClickUp tests
 1. Open an issue first for larger changes so we can agree on the approach.
 2. Keep PRs focused; one logical change per PR.
 3. Add or update a check in `test/e2e.mjs` for any behaviour change. If you fixed a mismatch between the spec and the live API, describe how you verified the live behaviour.
-4. Update `README.md` for user-facing changes and add a line under `## [Unreleased]` in `CHANGELOG.md`.
+4. Update `README.md` for user-facing changes. `CHANGELOG.md` is generated automatically by release-please from PR titles, so don't edit it.
 5. Use [Conventional Commits](https://www.conventionalcommits.org/) for the PR title (`fix: …`, `feat: …`, `docs: …`). It becomes the squash commit and decides the next version (see below).
 
 ## Releases and automation

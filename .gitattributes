@@ -4,3 +4,7 @@
 spec/** linguist-vendored
 src/generated/** linguist-generated -diff
 docs/tools/** linguist-generated
+
+# Keep GitHub language stats focused on the TypeScript server source in src/
+scripts/** linguist-detectable=false
+test/** linguist-detectable=false

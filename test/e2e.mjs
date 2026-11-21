@@ -325,7 +325,59 @@ assert.equal(new URL(last().url, base).pathname, "/api/v2/team/7/time_entries/st
 ok("meta mode is the default: 4 tools, search -> describe -> call");
 await c.close();
 
+// ---------- server metadata, instructions, annotations ----------
+c = await connect({ CLICKUP_TOOL_MODE: "", CLICKUP_READ_ONLY: "true", CLICKUP_WORKSPACE_ID: "999" });
+const info = c.getServerVersion();
+assert.ok(info.title && info.websiteUrl && info.icons?.length >= 1, "server has title / websiteUrl / icons");
+const ins = c.getInstructions();
+assert.ok(ins && ins.length > 0);
+assert.match(ins, /clickup_search_operations/);
+assert.match(ins, /Read-only/i);
+assert.match(ins, /999/);
+const roTools = (await c.listTools()).tools;
+const roRaw = roTools.find((t) => t.name === "clickup_request");
+assert.deepEqual(roRaw.inputSchema.properties.method.enum, ["GET"]);
+assert.equal(roRaw.annotations.readOnlyHint, true);
+assert.equal(roRaw.annotations.destructiveHint, false);
+const roCall = roTools.find((t) => t.name === "clickup_call_operation");
+assert.equal(roCall.annotations.readOnlyHint, true);
+assert.equal(roCall.annotations.destructiveHint, false);
+ok("server metadata + instructions; read-only narrows clickup_request / clickup_call_operation");
+await c.close();
+
+c = await connect({ CLICKUP_TOOL_MODE: "" });
+const rwTools = (await c.listTools()).tools;
+for (const n of ["clickup_search_operations", "clickup_describe_operation"]) {
+  const a = rwTools.find((t) => t.name === n).annotations;
+  assert.equal(a.readOnlyHint, true, n);
+  assert.equal(a.destructiveHint, false, n);
+  assert.equal(a.idempotentHint, true, n);
+  assert.equal(a.openWorldHint, false, n);
+}
+assert.equal(rwTools.find((t) => t.name === "clickup_call_operation").annotations.readOnlyHint, false);
+assert.equal(rwTools.find((t) => t.name === "clickup_request").annotations.readOnlyHint, false);
+assert.equal(rwTools.find((t) => t.name === "clickup_request").inputSchema.properties.method.enum.length, 5);
+ok("writable meta mode annotations");
+await c.close();
+
+c = await connect({});
+const dir = fs.mkdtempSync(path.join(os.tmpdir(), "clickup-e2e-dir-"));
+const nBefore = seen.length;
+r = await c.callTool({ name: "create_task_attachment", arguments: { task_id: "abc", file_path: dir } });
+assert.equal(r.isError, true);
+assert.match(r.content[0].text, /regular file/);
+assert.equal(seen.length, nBefore, "no HTTP call for a directory upload");
+fs.rmSync(dir, { recursive: true, force: true });
+ok("file_path pointing at a directory is rejected without calling the API");
+await c.close();
+
 // ---------- CLI ----------
+for (const flag of ["--help", "-h"]) {
+  const h = spawnSync(process.execPath, ["dist/index.js", flag], { encoding: "utf8" });
+  assert.equal(h.status, 0);
+  assert.match(h.stdout, /CLICKUP_API_TOKEN/);
+}
+ok("--help / -h print usage and exit 0");
 const v = spawnSync(process.execPath, ["dist/index.js", "--version"], { encoding: "utf8" });
 assert.equal(v.status, 0);
 assert.equal(v.stdout.trim(), pkg.version);

@@ -5,15 +5,29 @@
   "description": "Complete ClickUp API (173 v2+v3 operations) in 4 tools, ~700 tokens. Tasks, time, Chat, Docs.",
   "repository": {
     "url": "https://github.com/KelvinCampelo/clickup-full-mcp",
-    "source": "github"
+    "source": "github",
+    "id": "1465766282"
   },
   "websiteUrl": "https://github.com/KelvinCampelo/clickup-full-mcp#readme",
   "version": "2.1.2",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/KelvinCampelo/clickup-full-mcp/main/assets/icon.png",
+      "mimeType": "image/png",
+      "sizes": ["512x512"]
+    },
+    {
+      "src": "https://raw.githubusercontent.com/KelvinCampelo/clickup-full-mcp/main/assets/icon.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": ["any"]
+    }
+  ],
   "packages": [
     {
       "registryType": "npm",
       "identifier": "clickup-full-mcp",
       "version": "2.1.2",
+      "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
       },
@@ -23,26 +37,30 @@
           "description": "ClickUp personal API token (pk_...) or OAuth access token",
           "isRequired": true,
           "isSecret": true,
-          "format": "string"
+          "format": "string",
+          "placeholder": "pk_..."
         },
         {
           "name": "CLICKUP_WORKSPACE_ID",
           "description": "Default Workspace (team) ID, auto-filled into team_id / workspace_id",
           "isRequired": false,
-          "format": "string"
+          "format": "string",
+          "placeholder": "1234567"
         },
         {
           "name": "CLICKUP_TOOL_MODE",
           "description": "meta (default: 4 tools for the whole API) or full (one tool per endpoint)",
           "isRequired": false,
           "format": "string",
-          "default": "meta"
+          "default": "meta",
+          "choices": ["meta", "full"]
         },
         {
           "name": "CLICKUP_TOOLSETS",
           "description": "Comma-separated toolsets to expose, e.g. tasks,comments,time_tracking",
           "isRequired": false,
-          "format": "string"
+          "format": "string",
+          "placeholder": "tasks,comments,time_tracking"
         },
         {
           "name": "CLICKUP_READ_ONLY",
@@ -56,7 +74,63 @@
           "description": "compact (default: minified, null/empty fields removed), json (every field) or pretty (indented)",
           "isRequired": false,
           "format": "string",
-          "default": "compact"
+          "default": "compact",
+          "choices": ["compact", "json", "pretty"]
+        }
+      ]
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/kelvincampelo/clickup-full-mcp:2.1.2",
+      "runtimeHint": "docker",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "CLICKUP_API_TOKEN",
+          "description": "ClickUp personal API token (pk_...) or OAuth access token",
+          "isRequired": true,
+          "isSecret": true,
+          "format": "string",
+          "placeholder": "pk_..."
+        },
+        {
+          "name": "CLICKUP_WORKSPACE_ID",
+          "description": "Default Workspace (team) ID, auto-filled into team_id / workspace_id",
+          "isRequired": false,
+          "format": "string",
+          "placeholder": "1234567"
+        },
+        {
+          "name": "CLICKUP_TOOL_MODE",
+          "description": "meta (default: 4 tools for the whole API) or full (one tool per endpoint)",
+          "isRequired": false,
+          "format": "string",
+          "default": "meta",
+          "choices": ["meta", "full"]
+        },
+        {
+          "name": "CLICKUP_TOOLSETS",
+          "description": "Comma-separated toolsets to expose, e.g. tasks,comments,time_tracking",
+          "isRequired": false,
+          "format": "string",
+          "placeholder": "tasks,comments,time_tracking"
+        },
+        {
+          "name": "CLICKUP_READ_ONLY",
+          "description": "true to expose only read (GET) operations",
+          "isRequired": false,
+          "format": "boolean",
+          "default": "false"
+        },
+        {
+          "name": "CLICKUP_RESPONSE_FORMAT",
+          "description": "compact (default: minified, null/empty fields removed), json (every field) or pretty (indented)",
+          "isRequired": false,
+          "format": "string",
+          "default": "compact",
+          "choices": ["compact", "json", "pretty"]
         }
       ]
     }

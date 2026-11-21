@@ -30,7 +30,7 @@ body:
     id: version
     attributes:
       label: clickup-full-mcp version
-      description: Output of `node dist/index.js --version`
+      description: Output of `npx -y clickup-full-mcp --version` (or `node dist/index.js --version` from a local clone)
     validations:
       required: true
   - type: input
