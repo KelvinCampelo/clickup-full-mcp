@@ -33,6 +33,9 @@ export interface ApiResult {
 
 export class UserError extends Error {}
 
+/** Largest file accepted via `file_path` (it is read fully into memory before upload). */
+export const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+
 const WORKSPACE_KEYS = new Set(["team_id", "team_Id", "workspace_id", "workspaceId"]);
 export const isWorkspaceKey = (k: string) => WORKSPACE_KEYS.has(k);
 
@@ -167,6 +170,11 @@ export class ClickUpClient {
       }
       if (this.cfg.uploadRoots && !this.cfg.uploadRoots.some((r) => isInside(real, r))) {
         throw new UserError(`file_path is outside the allowed upload folders (CLICKUP_UPLOAD_ROOTS): ${abs}`);
+      }
+      const stat = await fs.stat(real);
+      if (!stat.isFile()) throw new UserError(`file_path must be a regular file (not a directory or special file): ${abs}`);
+      if (stat.size > MAX_UPLOAD_BYTES) {
+        throw new UserError(`file_path is too large (${stat.size} bytes); the limit is ${MAX_UPLOAD_BYTES} bytes (100 MiB): ${abs}`);
       }
       data = await fs.readFile(real);
       fileName ||= path.basename(abs);

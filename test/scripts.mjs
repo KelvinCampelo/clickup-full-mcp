@@ -63,5 +63,30 @@ r = diff(write("described.json", described));
 assert.deepEqual([r.breaking, r.has_changes, r.title.startsWith("fix(spec):")], ["false", "true", true]);
 ok("description-only change → fix(spec)");
 
+// server.json stays in sync with package.json and satisfies MCP Registry invariants.
+const pkg = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+const server = JSON.parse(fs.readFileSync(new URL("../server.json", import.meta.url), "utf8"));
+assert.equal(server.name, pkg.mcpName);
+assert.equal(server.version, pkg.version);
+assert.match(server.description, /\(\d+ v2\+v3 operations\)/);
+assert.equal(typeof server.repository?.id, "string");
+assert.ok(server.repository.id.length > 0);
+assert.ok(Array.isArray(server.icons) && server.icons.length >= 2);
+for (const icon of server.icons) {
+  assert.ok(icon.src?.startsWith("https://"));
+  assert.ok(icon.mimeType);
+  assert.ok(Array.isArray(icon.sizes) && icon.sizes.length > 0);
+}
+const npmPkg = server.packages.find((p) => p.registryType === "npm");
+const ociPkg = server.packages.find((p) => p.registryType === "oci");
+assert.ok(npmPkg, "server.json must include an npm package");
+assert.equal(npmPkg.version, pkg.version);
+assert.equal(npmPkg.runtimeHint, "npx");
+assert.ok(ociPkg, "server.json must include an oci package");
+assert.equal("version" in ociPkg, false, "oci package embeds version in identifier");
+assert.ok(ociPkg.identifier.endsWith(`:${pkg.version}`));
+assert.equal(ociPkg.runtimeHint, "docker");
+ok("server.json matches package.json (mcpName, version, npm + oci packages, repository.id, icons)");
+
 fs.rmSync(dir, { recursive: true, force: true });
 console.log(`\nAll ${passed} script checks passed.`);

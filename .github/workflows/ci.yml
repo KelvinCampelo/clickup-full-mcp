@@ -34,6 +34,32 @@ jobs:
             echo "::error::Generated files are stale. Run 'npm run generate' and commit the result."
             exit 1
           fi
+      - name: Validate server.json
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const s = JSON.parse(fs.readFileSync("server.json", "utf8"));
+            const p = JSON.parse(fs.readFileSync("package.json", "utf8"));
+            const fail = (msg) => { console.error("::error::server.json: " + msg); process.exit(1); };
+            if (!s.$schema || !s.title || !s.description) fail("missing required top-level fields");
+            if (s.name !== p.mcpName) fail(`name (${s.name}) !== package.json mcpName (${p.mcpName})`);
+            if (s.version !== p.version) fail(`version (${s.version}) !== package.json version (${p.version})`);
+            if (!s.repository?.url || !s.repository?.source || !s.repository?.id) fail("missing repository fields (url, source, id)");
+            if (!Array.isArray(s.icons) || s.icons.length === 0) fail("missing icons");
+            if (!Array.isArray(s.packages) || s.packages.length === 0) fail("missing packages");
+            if (!s.packages.some((x) => x.registryType === "npm")) fail("missing npm package");
+            if (!s.packages.some((x) => x.registryType === "oci")) fail("missing oci package");
+            for (const pkg of s.packages) {
+              if (!pkg.registryType || !pkg.identifier || !pkg.transport?.type) fail(`package missing required fields: ${JSON.stringify(pkg)}`);
+              if (pkg.registryType === "oci") {
+                if ("version" in pkg) fail("oci package must not specify version (embed it in identifier)");
+                if (!pkg.identifier.endsWith(":" + p.version)) fail(`oci identifier (${pkg.identifier}) does not end with :${p.version}`);
+              } else if (pkg.version !== p.version) {
+                fail(`${pkg.registryType} package version (${pkg.version}) !== package.json version (${p.version})`);
+              }
+            }
+            console.log(`server.json OK (${s.name}@${s.version}, ${s.packages.length} packages)`);
+          '
       - name: Package contents
         run: npm pack --dry-run
 
@@ -64,7 +90,7 @@ jobs:
         run: |
           docker run --rm clickup-full-mcp --version
           printf '%s\n' \
-            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"ci","version":"1"}}}' \
             '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
             '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
             | timeout 20 docker run -i --rm -e CLICKUP_API_TOKEN=pk_test clickup-full-mcp > out.jsonl || true

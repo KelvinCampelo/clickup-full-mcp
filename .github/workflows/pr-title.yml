@@ -4,8 +4,10 @@ name: PR title
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
+  workflow_dispatch:
 
-permissions: {}
+permissions:
+  pull-requests: read
 
 jobs:
   conventional-commit:
@@ -13,8 +15,20 @@ jobs:
     steps:
       - name: Title follows Conventional Commits
         env:
-          TITLE: ${{ github.event.pull_request.title }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            TITLE="$PR_TITLE"
+          else
+            TITLE="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open --json title --jq '.[0].title')"
+          fi
+          if [ -z "$TITLE" ] || [ "$TITLE" = "null" ]; then
+            echo "::error::No open PR found for ref '$GITHUB_REF_NAME'."
+            exit 1
+          fi
           if printf '%s' "$TITLE" | grep -qE '^(feat|fix|perf|docs|refactor|test|build|ci|chore|revert|style)(\([a-z0-9._/-]+\))?!?: .+'; then
             echo "OK: $TITLE"
           else

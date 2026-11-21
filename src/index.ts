@@ -13,6 +13,32 @@ if (process.argv.includes("--version") || process.argv.includes("-v")) {
   process.exit(0);
 }
 
+if (process.argv.includes("--help") || process.argv.includes("-h")) {
+  console.log(`${PACKAGE_NAME} v${VERSION}
+Complete ClickUp API (v2 + v3) MCP server. Speaks MCP over stdio.
+
+Usage:
+  ${PACKAGE_NAME} [--help | -h] [--version | -v]
+
+Environment variables:
+  CLICKUP_API_TOKEN          ClickUp personal token (pk_...) or OAuth access token (required)
+  CLICKUP_WORKSPACE_ID       Default Workspace ID, auto-filled for team_id / workspace_id
+  CLICKUP_TOOL_MODE          "meta" (4 tools, default) or "full" (one tool per operation)
+  CLICKUP_TOOLSETS           Comma-separated toolsets to expose (default: all)
+  CLICKUP_READ_ONLY          "true" to allow only GET operations
+  CLICKUP_DISABLED_TOOLS     Comma-separated operation names to hide
+  CLICKUP_ENABLE_RAW_REQUEST Expose the clickup_request raw-call tool
+  CLICKUP_UPLOAD_ROOTS       Folders file_path uploads may read from
+  CLICKUP_RESPONSE_FORMAT    "compact" (default), "json" or "pretty"
+  CLICKUP_MAX_RESPONSE_CHARS Truncate responses longer than this
+  CLICKUP_TIMEOUT_MS         Request timeout in milliseconds
+  CLICKUP_MAX_RETRIES        Retries on 429 / transient errors
+  CLICKUP_BASE_URL           Override the ClickUp API host
+
+Docs: https://github.com/KelvinCampelo/clickup-full-mcp#readme`);
+  process.exit(0);
+}
+
 const ALL_OPS: Operation[] = JSON.parse(readFileSync(new URL("./generated/operations.json", import.meta.url), "utf8"));
 
 let cfg: Config;
@@ -69,27 +95,49 @@ function toTool(op: Operation): Tool {
   };
 }
 
-const RAW_TOOL: Tool = {
-  name: "clickup_request",
-  description:
-    "Send a raw request to any ClickUp API path, for endpoints or parameters the typed tools don't cover. " +
-    "Uses the configured token; the host is fixed to the ClickUp API. Example: method=GET, path=/api/v2/team.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      method: { type: "string", enum: ["GET", "POST", "PUT", "PATCH", "DELETE"] },
-      path: { type: "string", description: "Path starting with /api/v2/ or /api/v3/ (path params already filled in)." },
-      query: {
-        type: "object",
-        description: "Query parameters. Array values are sent as repeated keys; use 'key[]' as the key for bracket style.",
+function buildRawTool(c: Config): Tool {
+  return {
+    name: "clickup_request",
+    description:
+      "Send a raw request to any ClickUp API path, for endpoints or parameters the typed tools don't cover. " +
+      "Uses the configured token; the host is fixed to the ClickUp API. Example: method=GET, path=/api/v2/team." +
+      (c.readOnly ? " Read-only mode: only GET is allowed." : ""),
+    inputSchema: {
+      type: "object",
+      properties: {
+        method: { type: "string", enum: c.readOnly ? ["GET"] : ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+        path: { type: "string", description: "Path starting with /api/v2/ or /api/v3/ (path params already filled in)." },
+        query: {
+          type: "object",
+          description: "Query parameters. Array values are sent as repeated keys; use 'key[]' as the key for bracket style.",
+        },
+        body: { description: "JSON request body." },
       },
-      body: { description: "JSON request body." },
+      required: ["method", "path"],
+      additionalProperties: false,
     },
-    required: ["method", "path"],
-    additionalProperties: false,
-  },
-  annotations: { title: "Raw ClickUp request", openWorldHint: true },
-};
+    annotations: c.readOnly
+      ? { title: "Raw ClickUp request", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+      : { title: "Raw ClickUp request", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
+  };
+}
+const RAW_TOOL = buildRawTool(cfg);
+
+/** Server-level guidance sent to the client at initialize time. */
+function buildInstructions(c: Config): string {
+  const lines = [
+    c.mode === "meta"
+      ? "Workflow: 1) clickup_search_operations to find an operation, 2) clickup_describe_operation for its schema, " +
+        "3) clickup_call_operation with { name, arguments }."
+      : "Each ClickUp API operation is its own tool.",
+    "Arguments: path and query params go at the top level of `arguments`; the JSON payload goes inside `body`. " +
+      "Dates are Unix timestamps in milliseconds.",
+  ];
+  if (c.defaultWorkspaceId) lines.push(`Default Workspace ID ${c.defaultWorkspaceId} is auto-filled for team_id / workspace_id.`);
+  if (c.readOnly) lines.push("Read-only mode: only GET operations are available.");
+  if (c.toolsets) lines.push(`Active toolsets: ${[...c.toolsets].sort().join(", ")}.`);
+  return lines.join("\n");
+}
 
 const META_TOOLS: Tool[] = [
   {
@@ -106,7 +154,13 @@ const META_TOOLS: Tool[] = [
       },
       additionalProperties: false,
     },
-    annotations: { title: "Search ClickUp operations", readOnlyHint: true, openWorldHint: false },
+    annotations: {
+      title: "Search ClickUp operations",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: "clickup_describe_operation",
@@ -117,7 +171,13 @@ const META_TOOLS: Tool[] = [
       required: ["name"],
       additionalProperties: false,
     },
-    annotations: { title: "Describe ClickUp operation", readOnlyHint: true, openWorldHint: false },
+    annotations: {
+      title: "Describe ClickUp operation",
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   },
   {
     name: "clickup_call_operation",
@@ -131,7 +191,9 @@ const META_TOOLS: Tool[] = [
       required: ["name"],
       additionalProperties: false,
     },
-    annotations: { title: "Call ClickUp operation", openWorldHint: true },
+    annotations: cfg.readOnly
+      ? { title: "Call ClickUp operation", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true }
+      : { title: "Call ClickUp operation", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
   },
 ];
 
@@ -240,7 +302,28 @@ async function runOperation(op: Operation, args: Record<string, any>) {
   }
 }
 
-const server = new Server({ name: PACKAGE_NAME, version: VERSION }, { capabilities: { tools: {} } });
+const server = new Server(
+  {
+    name: PACKAGE_NAME,
+    title: "ClickUp (full API)",
+    version: VERSION,
+    description: "Complete ClickUp API (v2 + v3) MCP server with 4-tool meta mode and full mode.",
+    websiteUrl: "https://github.com/KelvinCampelo/clickup-full-mcp#readme",
+    icons: [
+      {
+        src: "https://raw.githubusercontent.com/KelvinCampelo/clickup-full-mcp/main/assets/icon.png",
+        mimeType: "image/png",
+        sizes: ["512x512"],
+      },
+      {
+        src: "https://raw.githubusercontent.com/KelvinCampelo/clickup-full-mcp/main/assets/icon.svg",
+        mimeType: "image/svg+xml",
+        sizes: ["any"],
+      },
+    ],
+  },
+  { capabilities: { tools: {} }, instructions: buildInstructions(cfg) },
+);
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: listTools() }));
 
@@ -291,6 +374,15 @@ server.setRequestHandler(CallToolRequestSchema, async (req) => {
 });
 
 await server.connect(new StdioServerTransport());
+
+let shuttingDown = false;
+for (const sig of ["SIGINT", "SIGTERM"] as const) {
+  process.on(sig, () => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    server.close().finally(() => process.exit(0));
+  });
+}
 console.error(
   `[clickup-mcp] v${VERSION} ready: ${cfg.mode} mode, ${OPS.length}/${ALL_OPS.length} operations` +
     `${cfg.readOnly ? " (read-only)" : ""}${cfg.token ? "" : " — WARNING: CLICKUP_API_TOKEN not set"}`,
