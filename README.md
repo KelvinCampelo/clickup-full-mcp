@@ -7,6 +7,7 @@
 [![MCP](https://img.shields.io/badge/MCP-stdio-8A2BE2.svg)](https://modelcontextprotocol.io)
 [![MCP Registry](https://img.shields.io/badge/MCP%20Registry-listed-blue.svg)](https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.KelvinCampelo/clickup-full-mcp)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/KelvinCampelo/clickup-full-mcp/badge)](https://scorecard.dev/viewer/?uri=github.com/KelvinCampelo/clickup-full-mcp)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/17016/badge)](https://www.bestpractices.dev/projects/17016)
 
 **The entire ClickUp API in 4 tools.** A local [Model Context Protocol](https://modelcontextprotocol.io) server that lets Claude, Cursor, VS Code Copilot and any other MCP client use **all 173 ClickUp API operations** (v2 + v3) for about **700 tokens of context** instead of ~55,000.
 
