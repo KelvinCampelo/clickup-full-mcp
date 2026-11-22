@@ -9,24 +9,28 @@
     "id": "1465766282"
   },
   "websiteUrl": "https://github.com/KelvinCampelo/clickup-full-mcp#readme",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/KelvinCampelo/clickup-full-mcp/main/assets/icon.png",
       "mimeType": "image/png",
-      "sizes": ["512x512"]
+      "sizes": [
+        "512x512"
+      ]
     },
     {
       "src": "https://raw.githubusercontent.com/KelvinCampelo/clickup-full-mcp/main/assets/icon.svg",
       "mimeType": "image/svg+xml",
-      "sizes": ["any"]
+      "sizes": [
+        "any"
+      ]
     }
   ],
   "packages": [
     {
       "registryType": "npm",
       "identifier": "clickup-full-mcp",
-      "version": "2.1.2",
+      "version": "2.2.0",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
@@ -53,7 +57,10 @@
           "isRequired": false,
           "format": "string",
           "default": "meta",
-          "choices": ["meta", "full"]
+          "choices": [
+            "meta",
+            "full"
+          ]
         },
         {
           "name": "CLICKUP_TOOLSETS",
@@ -75,13 +82,17 @@
           "isRequired": false,
           "format": "string",
           "default": "compact",
-          "choices": ["compact", "json", "pretty"]
+          "choices": [
+            "compact",
+            "json",
+            "pretty"
+          ]
         }
       ]
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/kelvincampelo/clickup-full-mcp:2.1.2",
+      "identifier": "ghcr.io/kelvincampelo/clickup-full-mcp:2.2.0",
       "runtimeHint": "docker",
       "transport": {
         "type": "stdio"
@@ -108,7 +119,10 @@
           "isRequired": false,
           "format": "string",
           "default": "meta",
-          "choices": ["meta", "full"]
+          "choices": [
+            "meta",
+            "full"
+          ]
         },
         {
           "name": "CLICKUP_TOOLSETS",
@@ -130,7 +144,11 @@
           "isRequired": false,
           "format": "string",
           "default": "compact",
-          "choices": ["compact", "json", "pretty"]
+          "choices": [
+            "compact",
+            "json",
+            "pretty"
+          ]
         }
       ]
     }
