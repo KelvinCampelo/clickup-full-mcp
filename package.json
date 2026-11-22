@@ -1,6 +1,6 @@
 {
   "name": "clickup-full-mcp",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "mcpName": "io.github.KelvinCampelo/clickup-full-mcp",
   "description": "MCP server for the complete ClickUp API: all 173 v2 + v3 operations through 4 tools (~700 tokens of context). Generated from ClickUp's official OpenAPI specs.",
   "keywords": [
