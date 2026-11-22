@@ -16,6 +16,8 @@ Tasks, subtasks, lists, folders, spaces, comments, checklists, custom fields, ta
 > [!NOTE]
 > Community project, not affiliated with or endorsed by ClickUp.
 
+[![ClickUp (full API) MCP server](https://mcprush.com/badge/clickup-full-api-mcp/card.svg)](https://mcprush.com/to/clickup-full-api-mcp?ref=badge)
+
 ## Contents
 
 - [Why 4 tools?](#why-4-tools)
